@@ -10,9 +10,9 @@ Requires Chef 0.7.10 or higher for Lightweight Resource and Provider support. Ch
 
 A valid username, password and API key for your Pingdom account is required. These credentials should be provided as values for the following node attributes:
 
-`node[:pingdom][:api_user]`
-`node[:pingdom][:api_pass]`
-`node[:pingdom][:api_key]`
+* `node[:pingdom][:api_user]`
+* `node[:pingdom][:api_pass]`
+* `node[:pingdom][:api_key]`
 
 Recipes
 =======
@@ -75,7 +75,7 @@ License and Author
 
 Author:: Cameron Johnston (<cameron@needle.com>)
 
-Copyright 2009-2010, Needle, Inc.
+Copyright 2011, Needle, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -92,6 +92,11 @@ limitations under the License.
 Changes
 =======
 
-## v0.1.0
+## v0.0.2
+
+* Rewire LWRP to use a single resource and provider instead of a resource and provider per service check type.
+* Add support for TCP, UDP, DNS, SMTP, POP3, IMAP and Ping service check types.
+
+## v0.0.1
 
 Initial release.
