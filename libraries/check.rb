@@ -19,17 +19,47 @@ module Opscode
 
         case type
         when 'http'
-          %w{ url encryption port auth shouldcontain shouldnotcontain postdata requestheader }.each do |p|
+          %w{ url encryption port username password shouldcontain shouldnotcontain postdata requestheader }.each do |p|
+            valid_params << p
+          end
+          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
+        when 'httpcustom'
+          %w{ url encryption port username password additionalurls }.each do |p|
             valid_params << p
           end
           Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
         when 'tcp'
+          %w{ port stringtosend stringtoexpect }.each do |p|
+            valid_params << p
+          end
+          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
         when 'udp'
+          %w{ port stringtosend stringtoexpect }.each do |p|
+            valid_params << p
+          end
+          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
         when 'ping'
+          # ping has no special attributes
         when 'dns'
+          %w{ nameserver expectedip }.each do |p|
+            valid_params << p
+          end
+          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
         when 'smtp'
+          %w{ port username password encryption stringtoexpect }.each do |p|
+            valid_params << p
+          end
+          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
         when 'pop3'
+          %w{ port encryption stringtoexpect }.each do |p|
+            valid_params << p
+          end
+          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
         when 'imap'
+          %w{ port encryption stringtoexpect }.each do |p|
+            valid_params << p
+          end
+          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
         end
 
         params.each_key do |k|
