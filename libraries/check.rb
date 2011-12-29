@@ -194,6 +194,7 @@ module Opscode
           end
         rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, JSON::ParserError => e
           Chef::Log.error("Pingdom: Error creating check: #{e}")
+          raise
         end
       end
 
@@ -224,11 +225,13 @@ module Opscode
           return result
         rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, JSON::ParserError => e
           Chef::Log.error("Pingdom: Error deleting check id #{check_id}: #{e}")
+          raise
         end
       end
 
       def update_check(check_id)
         Chef::Log.error("Pingdom: updating checks is not currently supported!")
+        raise
       end
 
     end

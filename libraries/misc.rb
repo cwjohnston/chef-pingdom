@@ -22,6 +22,7 @@ module Opscode
           %w{ api_key api_user api_pass }.each do |attr|
             if node[:pingdom]["#{attr}"].empty? or node[:pingdom]["#{attr}"].nil?
               Chef::Log.error("Pingdom: node[:pingdom][:#{attr}] attribute not set, aborting")
+              raise
             end
           end
       end
