@@ -12,15 +12,17 @@ module Opscode
       API_VER = '2.0'
 
       def validate_check_params(type,params)
-        valid_check_params = [ 'name', 'host', 'type', 'paused', 'resolution', 'contactids', 'sendtoemail', 
+        Chef::Log.debug("Pingdom: Attempting to validate parameters for check of type '#{type}'")
+        valid_params = [ 'name', 'host', 'type', 'paused', 'resolution', 'contactids', 'sendtoemail',
           'sendtosms', 'sendtotwitter', 'sendtoiphone', 'sendtoandroid', 'sendnotificationwhendown',
           'notifyagainevery', 'notifywhenbackup' ]
 
         case type
         when 'http'
           %w{ url encryption port auth shouldcontain shouldnotcontain postdata requestheader }.each do |p|
-            valid_check_params << p
+            valid_params << p
           end
+          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
         when 'tcp'
         when 'udp'
         when 'ping'
@@ -31,8 +33,12 @@ module Opscode
         end
 
         params.each_key do |k|
-          unless valid_check_params.include?(k)
+          Chef::Log.debug("Pingdom: Validating check parameter '#{k}'")
+          unless valid_params.include?(k.to_s)
             Chef::Log.error("Pingdom: Encountered unknown check parameter '#{k}'")
+            raise
+          else
+            Chef::Log.debug("Pingdom: Check parameter '#{k}' appears to be valid.")
           end
         end
       end
@@ -108,6 +114,7 @@ module Opscode
 
       def add_check(name, host, type, params)
         begin
+          Chef::Log.debug("Pingdom: Attempting to add check '#{name}' of type '#{type}' for host '#{host}' with parameters #{params.inspect}")
           api = Net::HTTP.new(API_HOST, API_PORT)
           api.use_ssl = true
           api.verify_mode = OpenSSL::SSL::VERIFY_PEER
