@@ -13,3 +13,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+j = gem_package "json" do
+  version "<= 1.6.1"
+  action :nothing
+end
+
+j.run_action(:install)
