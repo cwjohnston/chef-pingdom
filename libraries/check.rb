@@ -94,8 +94,8 @@ module Opscode
           api = Net::HTTP.new(API_HOST, API_PORT)
           api.use_ssl = true
           api.verify_mode = OpenSSL::SSL::VERIFY_PEER
-          request = Net::HTTP::Get.new("/api/#{API_VER}/checks", { 'App-Key' => node[:pingdom][:api_key] })
-          request.basic_auth(node[:pingdom][:api_user], node[:pingdom][:api_pass])
+          request = Net::HTTP::Get.new("/api/#{API_VER}/checks", { 'App-Key' => new_resource.api_key })
+          request.basic_auth(new_resource.username, new_resource.password)
           Chef::Log.debug("Pingdom: API connection configured as #{api.inspect}")
           Chef::Log.debug("Pingdom: API request configured as #{request.to_hash.inspect}")
           Chef::Log.debug("Pingdom: Sending API request...")
@@ -171,8 +171,8 @@ module Opscode
           params.each do |k,v|
             form_data.merge!({ k => v})
           end
-          request = Net::HTTP::Post.new("/api/#{API_VER}/checks", { 'App-Key' => node[:pingdom][:api_key] })
-          request.basic_auth(node[:pingdom][:api_user], node[:pingdom][:api_pass])
+          request = Net::HTTP::Post.new("/api/#{API_VER}/checks", { 'App-Key' => new_resource.api_key })
+          request.basic_auth(new_resource.username, new_resource.password)
           request.set_form_data(form_data)
           Chef::Log.debug("Pingdom: API connection configured as #{api.inspect}")
           Chef::Log.debug("Pingdom: API request configured as #{request.to_hash.inspect}")
@@ -204,8 +204,8 @@ module Opscode
           api = Net::HTTP.new(API_HOST, API_PORT)
           api.use_ssl = true
           api.verify_mode = OpenSSL::SSL::VERIFY_NONE
-          request = Net::HTTP::Delete.new("/api/#{API_VER}/checks/#{check_id}", { 'App-Key' => node[:pingdom][:api_key] })
-          request.basic_auth(node[:pingdom][:api_user], node[:pingdom][:api_pass])
+          request = Net::HTTP::Delete.new("/api/#{API_VER}/checks/#{check_id}", { 'App-Key' => new_resource.api_key })
+          request.basic_auth(new_resource.username, new_resource.password)
           Chef::Log.debug("Pingdom: API connection configured as #{api.inspect}")
           Chef::Log.debug("Pingdom: API request configured as #{request.to_hash.inspect}")
           Chef::Log.debug("Pingdom: Sending API request...")
