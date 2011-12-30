@@ -8,16 +8,12 @@ Requirements
 
 Requires Chef 0.7.10 or higher for Lightweight Resource and Provider support. Chef 0.10+ is recommended as this cookbook has not been tested with earlier versions.
 
-A valid username, password and API key for your Pingdom account is required. These credentials should be provided as values for the following node attributes:
-
-* `node[:pingdom][:api_user]`
-* `node[:pingdom][:api_pass]`
-* `node[:pingdom][:api_key]`
+A valid username, password and API key for your Pingdom account is required.
 
 Recipes
 =======
 
-This cookbook provides an empty default recipe which installs the required `json` gem.
+This cookbook provides an empty default recipe which installs the required `json` gem (verison <=1.6.1). Chef already requires this gem, so it's really just included in the interests of completeness.
 
 Libraries
 =========
@@ -29,9 +25,16 @@ Resources and Providers
 
 This cookbook provides a single resource (`pingdom_check`) and corresponding provider for managing Pingdom service checks. 
 
-`pingdom_check` resources support the actions `add` and `delete`, `add` being the default. Each `pingdom_check` resource requires a `host` attribute parameter which indicates the hostname (or IP address) which the service check will target, and may also specifiy attributes for the optional `type` and `check_params` parameters. 
+`pingdom_check` resources support the actions `add` and `delete`, `add` being the default. Each `pingdom_check` resource requires the following resource attributes:
 
-The `type` parameter will accept one of the following service check types. If no value is specified, the check type will default to `http`.
+* `host` - indicates the hostname (or IP address) which the service check will target
+* `api_key` - a valid API key for your Pingdom account
+* `username` - your Pingdom username
+* `password` - your Pingdom password
+
+`pingdom_check` resources may also specifiy values for the optional `type` and `check_params` attributes.
+
+The `type` attribute will accept one of the following service check types. If no value is specified, the check type will default to `http`.
 
 * http
 * tcp
@@ -42,7 +45,7 @@ The `type` parameter will accept one of the following service check types. If no
 * pop3
 * imap
 
-The optional `params` attribute is expected to be a hash containing key/value pairs which match the type-specific parameters defined by the [Pingdom API](http://www.pingdom.com/services/api-documentation-rest/#ResourceChecks).
+The optional `check_params` attribute is expected to be a hash containing key/value pairs which match the type-specific parameters defined by the [Pingdom API](http://www.pingdom.com/services/api-documentation-rest/#ResourceChecks). If no attributes are provided for `check_params`, the default values for type-specific defaults will be used.
 
 Usage
 =====
@@ -52,23 +55,44 @@ In order to utilize this cookbook, put the following at the top of the recipe wh
     include_recipe 'pingdom'
 
 The following resource would configure a HTTP service check for the host `foo.example.com`:
-    
+
     pingdom_check 'foo http check' do
-      host 'foo.example.com'
+      host 'foo.example.com'A
+      api_key node[:pingdom][:api_key]
+      username node[:pingdom][:username]
+      password node[:pingdom][:password]
     end
 
-The resulting HTTP service check would be created using all the Pingdom defaults for HTTP service checks. 
+The resulting HTTP service check would be created using all the Pingdom defaults for HTTP service checks.
 
 The following resource would configure an HTTP service check for the host `bar.example.com` utilizing some of the parameters specific to the HTTP service check type:
 
     pingdom_check 'bar.example.com http status check' do
       host 'bar.example.com'
+      api_key node[:pingdom][:api_key]
+      username node[:pingdom][:username]
+      password node[:pingdom][:password]
       check_params :url => "/status",
                    :shouldcontain => "Everything is OK!",
                    :sendnotificationwhendown => 2,
                    :sendtoemail => "true",
                    :sendtoiphone => "true"
     end
+
+Caveats
+=======
+
+* Changes in `check_params` do not modify the configuration of existing service checks.
+* One must look up contact IDs manually if setting `contactids` in `check_params`
+
+Future
+======
+
+* Add support for managing contacts
+* Add `enable` and `disable` actions for service checks
+* Refactor to account for changes in `check_params` values
+* Convert `TrueClass` attribute values to `"true"` strings
+* Validate class types for `check_params` attributes
 
 License and Author
 ==================
@@ -92,11 +116,13 @@ limitations under the License.
 Changes
 =======
 
-## v0.0.2
+## v0.0.3
+* Added `api_key`, `username` and `password` as resource attributes instead of relying on node attributes.
 
+## v0.0.2
 * Rewire LWRP to use a single resource and provider instead of a resource and provider per service check type.
 * Add support for TCP, UDP, DNS, SMTP, POP3, IMAP and Ping service check types.
 
 ## v0.0.1
+* Initial release.
 
-Initial release.
