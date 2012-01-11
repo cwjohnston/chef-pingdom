@@ -89,13 +89,13 @@ module Opscode
         end
       end
 
-      def get_checks()
+      def get_checks(api_key, username, password)
         begin
           api = Net::HTTP.new(API_HOST, API_PORT)
           api.use_ssl = true
           api.verify_mode = OpenSSL::SSL::VERIFY_PEER
-          request = Net::HTTP::Get.new("/api/#{API_VER}/checks", { 'App-Key' => new_resource.api_key })
-          request.basic_auth(new_resource.username, new_resource.password)
+          request = Net::HTTP::Get.new("/api/#{API_VER}/checks", { 'App-Key' => api_key })
+          request.basic_auth(username, password)
           Chef::Log.debug("Pingdom: API connection configured as #{api.inspect}")
           Chef::Log.debug("Pingdom: API request configured as #{request.to_hash.inspect}")
           Chef::Log.debug("Pingdom: Sending API request...")
@@ -115,8 +115,8 @@ module Opscode
         end
       end
 
-     def get_check_id(check_name, type)
-        checks = get_checks()
+     def get_check_id(check_name, type, api_key, username, password)
+        checks = get_checks(api_key, username, password)
         checks['checks'].each do |check|
           if check['name'] == check_name and check['type'] == type
             Chef::Log.debug("Pingdom: found check id #{check['id']} for check name #{check_name} of type #{type}")
@@ -125,8 +125,8 @@ module Opscode
         end
       end
 
-      def get_check_name(check_id)
-        checks = get_checks()
+      def get_check_name(check_id, api_key, username, password)
+        checks = get_checks(api_key, username, password)
         checks['checks'].each do |check|
           if check['id'] == check_id
             Chef::Log.debug("Pingdom: found check name #{check['name']} for check id #{check_id}")
@@ -135,10 +135,10 @@ module Opscode
         end
       end
 
-      def get_check(check_name, type)
+      def get_check(check_name, type, api_key, username, password)
         result = nil
         target = get_check_id(check_name, type)
-        checks = get_checks()
+        checks = get_checks(api_key, username, password)
         checks['checks'].each do |check|
           if check['id'] == target
             Chef::Log.debug("Pingdom: found details for check #{check_name} of type #{type}: #{check.inspect}")
@@ -148,9 +148,9 @@ module Opscode
         return result
       end
 
-      def check_exists?(check_name, type)
+      def check_exists?(check_name, type, api_key, username, password)
         answer = false
-        checks = get_checks()
+        checks = get_checks(api_key, username, password)
         checks['checks'].each do |check|
           if check['name'] == check_name and check['type'] == type
             Chef::Log.debug("Pingdom: found existing check (name: #{check['name']}, id: #{check['id']}, type: #{check['type']})")
@@ -160,7 +160,7 @@ module Opscode
         return answer
       end
 
-      def add_check(name, host, type, params)
+      def add_check(name, host, type, params, api_key, username, password)
         begin
           Chef::Log.debug("Pingdom: Attempting to add check '#{name}' of type '#{type}' for host '#{host}' with parameters #{params.inspect}")
           api = Net::HTTP.new(API_HOST, API_PORT)
@@ -171,8 +171,8 @@ module Opscode
           params.each do |k,v|
             form_data.merge!({ k => v})
           end
-          request = Net::HTTP::Post.new("/api/#{API_VER}/checks", { 'App-Key' => new_resource.api_key })
-          request.basic_auth(new_resource.username, new_resource.password)
+          request = Net::HTTP::Post.new("/api/#{API_VER}/checks", { 'App-Key' => api_key })
+          request.basic_auth(username, password)
           request.set_form_data(form_data)
           Chef::Log.debug("Pingdom: API connection configured as #{api.inspect}")
           Chef::Log.debug("Pingdom: API request configured as #{request.to_hash.inspect}")
@@ -198,14 +198,14 @@ module Opscode
         end
       end
 
-      def delete_check(check_id)
+      def delete_check(check_id, api_key, username, password)
         begin
           result = false
           api = Net::HTTP.new(API_HOST, API_PORT)
           api.use_ssl = true
           api.verify_mode = OpenSSL::SSL::VERIFY_NONE
-          request = Net::HTTP::Delete.new("/api/#{API_VER}/checks/#{check_id}", { 'App-Key' => new_resource.api_key })
-          request.basic_auth(new_resource.username, new_resource.password)
+          request = Net::HTTP::Delete.new("/api/#{API_VER}/checks/#{check_id}", { 'App-Key' => api_key })
+          request.basic_auth(username, password)
           Chef::Log.debug("Pingdom: API connection configured as #{api.inspect}")
           Chef::Log.debug("Pingdom: API request configured as #{request.to_hash.inspect}")
           Chef::Log.debug("Pingdom: Sending API request...")
