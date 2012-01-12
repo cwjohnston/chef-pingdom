@@ -26,67 +26,41 @@ module Opscode
       API_HOST = 'api.pingdom.com'
       API_PORT = 443
       API_VER = '2.0'
-
-      def validate_check_params(type,params)
+      
+      CHECK_PARAMS = {
+        'shared' => [ 'name', 'host', 'type', 'paused', 'resolution', 'contactids', 'sendtoemail', 'sendtosms', 'sendtotwitter', 'sendtoiphone', 'sendtoandroid', 'sendnotificationwhendown', 'notifyagainevery', 'notifywhenbackup'],
+        'http' => [ 'url', 'encryption', 'port', 'username', 'password', 'shouldcontain', 'shouldnotcontain', 'postdata', 'requestheader' ],
+        'httpcustom' => [ 'url', 'encryption', 'port', 'username', 'password', 'additionalurls' ],
+        'tcp' => [ 'port', 'stringtosend', 'stringtoexpect' ],
+        'udp' => [ 'port', 'stringtosend', 'stringtoexpect' ],
+        'ping' => [ ],
+        'dns' => [ 'nameserver', 'expectedip' ],
+        'smtp' => [ 'port', 'username', 'password', 'encryption', 'stringtoexpect' ],
+        'pop3' => [ 'port', 'encryption', 'stringtoexpect' ],
+        'imap' => [ 'port', 'encryption', 'stringtoexpect' ]
+      }
+      
+      def validate_check_params(type, params)
         Chef::Log.debug("Pingdom: Attempting to validate parameters for check of type '#{type}'")
-        valid_params = [ 'name', 'host', 'type', 'paused', 'resolution', 'contactids', 'sendtoemail',
-          'sendtosms', 'sendtotwitter', 'sendtoiphone', 'sendtoandroid', 'sendnotificationwhendown',
-          'notifyagainevery', 'notifywhenbackup' ]
-
-        case type
-        when 'http'
-          %w{ url encryption port username password shouldcontain shouldnotcontain postdata requestheader }.each do |p|
-            valid_params << p
-          end
-          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
-        when 'httpcustom'
-          %w{ url encryption port username password additionalurls }.each do |p|
-            valid_params << p
-          end
-          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
-        when 'tcp'
-          %w{ port stringtosend stringtoexpect }.each do |p|
-            valid_params << p
-          end
-          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
-        when 'udp'
-          %w{ port stringtosend stringtoexpect }.each do |p|
-            valid_params << p
-          end
-          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
-        when 'ping'
-          # ping has no special attributes
-        when 'dns'
-          %w{ nameserver expectedip }.each do |p|
-            valid_params << p
-          end
-          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
-        when 'smtp'
-          %w{ port username password encryption stringtoexpect }.each do |p|
-            valid_params << p
-          end
-          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
-        when 'pop3'
-          %w{ port encryption stringtoexpect }.each do |p|
-            valid_params << p
-          end
-          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
-        when 'imap'
-          %w{ port encryption stringtoexpect }.each do |p|
-            valid_params << p
-          end
-          Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
-        end
+        valid_params = CHECK_PARAMS['shared'] | CHECK_PARAMS[type]
+        Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
 
         params.each_key do |k|
           Chef::Log.debug("Pingdom: Validating check parameter '#{k}'")
           unless valid_params.include?(k.to_s)
-            Chef::Log.error("Pingdom: Encountered unknown check parameter '#{k}'")
+            Chef::Log.error("Pingdom: Encountered unknown check parameter '#{k}' for type #{type}.")
             raise
           else
-            Chef::Log.debug("Pingdom: Check parameter '#{k}' appears to be valid.")
+            Chef::Log.debug("Pingdom: Check parameter '#{k}' appears to be valid for type #{type}.")
           end
         end
+      end
+
+      def sanitize_check_params(type, params)
+        if validate_check_params(type, params)
+          clean_params = params.inject({}) { |h, (k, v)| h[k] = Boolean(v); h }
+        end
+        return clean_params
       end
 
       def get_checks(api_key, username, password)
