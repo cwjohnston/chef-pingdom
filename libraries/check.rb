@@ -133,17 +133,34 @@ module Opscode
         end
       end
 
-      def get_check(check_name, type, api_key, username, password)
-        result = nil
-        target = get_check_id(check_name, type)
-        checks = get_checks(api_key, username, password)
-        checks['checks'].each do |check|
-          if check['id'] == target
-            Chef::Log.debug("Pingdom: found details for check #{check_name} of type #{type}: #{check.inspect}")
-            result = check
+      def get_check_details(check_name, type, api_key, username, password)
+        details = Hash.new
+        check_id = get_check_id(check_name, type, api_key, username, password)
+        begin
+          api = Net::HTTP.new(API_HOST, API_PORT)
+          api.use_ssl = true
+          api.verify_mode = OpenSSL::SSL::VERIFY_PEER
+          request = Net::HTTP::Get.new("/api/#{API_VER}/checks/#{check_id}", { 'App-Key' => api_key })
+          request.basic_auth(username, password)
+          Chef::Log.debug("Pingdom: API connection configured as #{api.inspect}")
+          Chef::Log.debug("Pingdom: API request configured as #{request.to_hash.inspect}")
+          Chef::Log.debug("Pingdom: Sending API request...")
+          api.start
+          response = api.request(request)
+          unless response.body.nil?
+            Chef::Log.debug("Pingdom: Received response code #{response.code}")
+            Chef::Log.debug("Pingdom: Received the following response body: #{JSON.parse(response.body).inspect}")
+            details = JSON.parse(response.body)
+          else
+            Chef::Log.error("Pingdom: Response body was empty!")
+            raise
           end
+        rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, JSON::ParserError => e
+          Chef::Log.error("Pingdom: Error retreiving check details: #{e}")
+          raise
         end
-        return result
+
+        return details['check']
       end
 
       def check_exists?(check_name, type, api_key, username, password)
