@@ -224,8 +224,8 @@ module Opscode
           api.use_ssl = true
           api.verify_mode = OpenSSL::SSL::VERIFY_PEER
           form_data = { 'name' => name, 'host' => host, 'type' => type }
-          validate_check_params(type, params)
-          params.each do |k,v|
+          clean_params = sanitize_check_params(type, params)
+          clean_params.each do |k,v|
             form_data.merge!({ k => v})
           end
           request = Net::HTTP::Post.new("/api/#{API_VER}/checks", { 'App-Key' => api_key })
