@@ -175,6 +175,48 @@ module Opscode
         return answer
       end
 
+      def check_modified?(name, host, type, params, api_key, username, password)
+        difference = check_diff(name, host, type, params, api_key, username, password) 
+        if difference.empty?
+          return false
+        else
+          return true
+        end
+      end
+
+      def check_diff(name, host, type, params, api_key, username, password)
+        current_check = get_check_details(name, type, api_key, username, password)
+        # delete some key,value pairs that will never be passed in via the chef resource
+        %w{ id status created lasterrortime lasttesttime }.each do |unwanted|
+          current_check.delete(unwanted)
+        end
+        # flatten the hash to a single dimension
+        type_attributes = current_check['type'][type]
+        current_check['type'] = type
+        current_check.merge!(type_attributes)
+
+        new_check = Hash.new
+        new_check.merge!({ "name" => name })
+        new_check.merge!({ "hostname" => host })
+        new_check.merge!({ "type" => type })
+
+        clean_params = sanitize_check_params(type, params)
+
+        clean_params.each do |k,v|
+          new_check.merge!({ k => v })
+        end
+
+        Chef::Log.debug("Pingdom: Comparing existing check with provided check configuration")
+        Chef::Log.debug("Pingdom: Existing check parameters: #{current_check.inspect}")
+        Chef::Log.debug("Pingdom: Provided check parameters: #{new_check.inspect}")
+
+        difference = current_check.diff(new_check)
+
+        Chef::Log.debug("Pingdom: Difference: #{difference.inspect}")
+        
+        return difference
+      end
+
       def add_check(name, host, type, params, api_key, username, password)
         begin
           Chef::Log.debug("Pingdom: Attempting to add check '#{name}' of type '#{type}' for host '#{host}' with parameters #{params.inspect}")
