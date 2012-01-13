@@ -19,6 +19,30 @@ require 'net/http'
 require 'net/https'
 require 'json'
 
+module Kernel
+  def Boolean(obj)
+    return true if obj== true || obj =~ (/(true)$/i)
+    return false if obj== false || obj.nil? || obj =~ (/(false)$/i)
+    return obj
+    #raise ArgumentError.new("invalid value for Boolean: \"#{string}\"")
+  end
+end
+
+class Hash
+  def diff(other)
+    (self.keys + other.keys).uniq.inject({}) do |memo, key|
+      unless self[key] == other[key] or other[key].nil?
+        if self[key].kind_of?(Hash) &&  other[key].kind_of?(Hash)
+          memo[key] = self[key].diff(other[key])
+        else
+          memo[key] = [self[key], other[key]]
+        end
+      end
+      memo
+    end
+  end
+end
+
 module Opscode
   module Pingdom
     module Check
