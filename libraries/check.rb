@@ -74,7 +74,7 @@ module Opscode
             params[k] = v.to_a
           end
           Chef::Log.debug("Pingdom: Validating check parameter '#{k}'")
-          Chef::Log.debug("Pingdom: value for '#{k}' is '#{v}', class #{v.class}")
+          Chef::Log.debug("Pingdom: value for '#{k}' is '#{v.inspect}', class #{v.class}")
           unless valid_params.include?(k.to_s)
             Chef::Log.error("Pingdom: Encountered unknown check parameter '#{k}' for type #{type}.")
             raise
