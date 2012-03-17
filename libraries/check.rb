@@ -52,7 +52,7 @@ module Opscode
       API_VER = '2.0'
       
       CHECK_PARAMS = {
-        'shared' => [ 'name', 'host', 'type', 'paused', 'resolution', 'contactids', 'sendtoemail', 'sendtosms', 'sendtotwitter', 'sendtoiphone', 'sendtoandroid', 'sendnotificationwhendown', 'notifyagainevery', 'notifywhenbackup'],
+        'shared' => [ 'name', 'host', 'hostname', 'type', 'paused', 'resolution', 'contactids', 'sendtoemail', 'sendtosms', 'sendtotwitter', 'sendtoiphone', 'sendtoandroid', 'sendnotificationwhendown', 'notifyagainevery', 'notifywhenbackup'],
         'http' => [ 'url', 'encryption', 'port', 'username', 'password', 'shouldcontain', 'shouldnotcontain', 'postdata', 'requestheader', 'requestheaders' ],
         'httpcustom' => [ 'url', 'encryption', 'port', 'username', 'password', 'additionalurls' ],
         'tcp' => [ 'port', 'stringtosend', 'stringtoexpect' ],
