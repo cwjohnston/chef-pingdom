@@ -53,7 +53,7 @@ module Opscode
       
       CHECK_PARAMS = {
         'shared' => [ 'name', 'host', 'type', 'paused', 'resolution', 'contactids', 'sendtoemail', 'sendtosms', 'sendtotwitter', 'sendtoiphone', 'sendtoandroid', 'sendnotificationwhendown', 'notifyagainevery', 'notifywhenbackup'],
-        'http' => [ 'url', 'encryption', 'port', 'username', 'password', 'shouldcontain', 'shouldnotcontain', 'postdata', 'requestheader' ],
+        'http' => [ 'url', 'encryption', 'port', 'username', 'password', 'shouldcontain', 'shouldnotcontain', 'postdata', 'requestheader', 'requestheaders' ],
         'httpcustom' => [ 'url', 'encryption', 'port', 'username', 'password', 'additionalurls' ],
         'tcp' => [ 'port', 'stringtosend', 'stringtoexpect' ],
         'udp' => [ 'port', 'stringtosend', 'stringtoexpect' ],
@@ -69,8 +69,12 @@ module Opscode
         valid_params = CHECK_PARAMS['shared'] | CHECK_PARAMS[type]
         Chef::Log.debug("Pingdom: The following parameters are considered valid for check type '#{type}': #{valid_params.inspect}")
 
-        params.each_key do |k|
+        params.each do |k,v|
+          if k == "contactids" and v.is_a?(String)
+            params[k] = v.to_a
+          end
           Chef::Log.debug("Pingdom: Validating check parameter '#{k}'")
+          Chef::Log.debug("Pingdom: value for '#{k}' is '#{v}', class #{v.class}")
           unless valid_params.include?(k.to_s)
             Chef::Log.error("Pingdom: Encountered unknown check parameter '#{k}' for type #{type}.")
             raise
@@ -82,7 +86,12 @@ module Opscode
 
       def sanitize_check_params(type, params)
         if validate_check_params(type, params)
+          # when we query Pingdom for check details they return a rather annoying multi-dimensional hash that needs flattening
           clean_params = params.inject({}) { |h, (k, v)| h[k] = Boolean(v); h }
+        end
+        if clean_params.has_key?('contactids')
+          # contactsid parameter needs to be posted as a comma seperated list of integers
+          clean_params['contactids'] = clean_params['contactids'].join(',')
         end
         return clean_params
       end
@@ -113,34 +122,34 @@ module Opscode
         end
       end
 
-     def get_check_id(check_name, type, api_key, username, password)
+     def get_check_id(name, type, api_key, username, password)
         checks = get_checks(api_key, username, password)
         checks['checks'].each do |check|
-          if check['name'] == check_name and check['type'] == type
-            Chef::Log.debug("Pingdom: found check id #{check['id']} for check name #{check_name} of type #{type}")
+          if check['name'] == name and check['type'] == type
+            Chef::Log.debug("Pingdom: found check id #{check['id']} for check name #{name} of type #{type}")
             return check['id']
           end
         end
       end
 
-      def get_check_name(check_id, api_key, username, password)
+      def get_check_name(id, api_key, username, password)
         checks = get_checks(api_key, username, password)
         checks['checks'].each do |check|
-          if check['id'] == check_id
-            Chef::Log.debug("Pingdom: found check name #{check['name']} for check id #{check_id}")
+          if check['id'] == id
+            Chef::Log.debug("Pingdom: found check name #{check['name']} for check id #{id}")
             return check['name']
           end
         end
       end
 
-      def get_check_details(check_name, type, api_key, username, password)
+      def get_check_details(name, type, api_key, username, password)
         details = Hash.new
-        check_id = get_check_id(check_name, type, api_key, username, password)
+        id = get_check_id(name, type, api_key, username, password)
         begin
           api = Net::HTTP.new(API_HOST, API_PORT)
           api.use_ssl = true
           api.verify_mode = OpenSSL::SSL::VERIFY_PEER
-          request = Net::HTTP::Get.new("/api/#{API_VER}/checks/#{check_id}", { 'App-Key' => api_key })
+          request = Net::HTTP::Get.new("/api/#{API_VER}/checks/#{id}", { 'App-Key' => api_key })
           request.basic_auth(username, password)
           Chef::Log.debug("Pingdom: API connection configured as #{api.inspect}")
           Chef::Log.debug("Pingdom: API request configured as #{request.to_hash.inspect}")
@@ -160,14 +169,20 @@ module Opscode
           raise
         end
 
+        #if details['check'].has_key?('contactids')
+        #  unless details['check']['contactids'].is_a?(Array)
+        #    details['check']['contactids'] = details['check']['contactids'].to_a
+        #  end
+        #end
+ 
         return details['check']
       end
 
-      def check_exists?(check_name, type, api_key, username, password)
+      def check_exists?(name, type, api_key, username, password)
         answer = false
         checks = get_checks(api_key, username, password)
         checks['checks'].each do |check|
-          if check['name'] == check_name and check['type'] == type
+          if check['name'] == name and check['type'] == type
             Chef::Log.debug("Pingdom: found existing check (name: #{check['name']}, id: #{check['id']}, type: #{check['type']})")
             answer = true
           end
@@ -194,15 +209,16 @@ module Opscode
         type_attributes = current_check['type'][type]
         current_check['type'] = type
         current_check.merge!(type_attributes)
+        current_clean_params = sanitize_check_params(type, current_check)
 
         new_check = Hash.new
         new_check.merge!({ "name" => name })
         new_check.merge!({ "hostname" => host })
         new_check.merge!({ "type" => type })
 
-        clean_params = sanitize_check_params(type, params)
+        new_clean_params = sanitize_check_params(type, params)
 
-        clean_params.each do |k,v|
+        new_clean_params.each do |k,v|
           new_check.merge!({ k => v })
         end
 
@@ -250,18 +266,57 @@ module Opscode
             raise
           end
         rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, JSON::ParserError => e
-          Chef::Log.error("Pingdom: Error creating check: #{e}")
+          Chef::Log.error("Pingdom: Error adding check: #{e}")
           raise
         end
       end
 
-      def delete_check(check_id, api_key, username, password)
+      def update_check(name, host, type, params, api_key, username, password)
+        id = get_check_id(name, type, api_key, username, password)
+        begin
+          Chef::Log.debug("Pingdom: Attempting to update check '#{name}' of type '#{type}' for host '#{host}' with modified parameters #{params.inspect}")
+          api = Net::HTTP.new(API_HOST, API_PORT)
+          api.use_ssl = true
+          api.verify_mode = OpenSSL::SSL::VERIFY_PEER
+          form_data = { 'host' => host }
+          clean_params = sanitize_check_params(type, params)
+          clean_params.each do |k,v|
+            form_data.merge!({ k => v})
+          end
+          request = Net::HTTP::Put.new("/api/#{API_VER}/checks/#{id}", { 'App-Key' => api_key })
+          request.set_form_data(form_data)
+          request.basic_auth(username, password)
+          Chef::Log.debug("Pingdom: API connection configured as #{api.inspect}")
+          Chef::Log.debug("Pingdom: API request configured as #{request.to_hash.inspect}")
+          Chef::Log.debug("Pingdom: Constructed the following form data:\n#{request.body.inspect}")
+          Chef::Log.debug("Pingdom: Sending API request...")
+          api.start
+          response = api.request(request)
+          unless response.body.nil?
+            Chef::Log.debug("Pingdom: Received response code #{response.code}")
+            Chef::Log.debug("Pingdom: Received the following response body: #{JSON.parse(response.body).inspect}")
+            parsed_response = JSON.parse(response.body)
+            if response.code == '200'
+              Chef::Log.info("Pingdom: Successfully updated check id #{id}")
+              return id
+            end
+          else
+            Chef::Log.error("Pingdom: Response body was empty!")
+            raise
+          end
+        rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, JSON::ParserError => e
+          Chef::Log.error("Pingdom: Error updating check: #{e}")
+          raise
+        end
+      end
+
+      def delete_check(id, api_key, username, password)
         begin
           result = false
           api = Net::HTTP.new(API_HOST, API_PORT)
           api.use_ssl = true
           api.verify_mode = OpenSSL::SSL::VERIFY_NONE
-          request = Net::HTTP::Delete.new("/api/#{API_VER}/checks/#{check_id}", { 'App-Key' => api_key })
+          request = Net::HTTP::Delete.new("/api/#{API_VER}/checks/#{id}", { 'App-Key' => api_key })
           request.basic_auth(username, password)
           Chef::Log.debug("Pingdom: API connection configured as #{api.inspect}")
           Chef::Log.debug("Pingdom: API request configured as #{request.to_hash.inspect}")
@@ -272,7 +327,7 @@ module Opscode
             Chef::Log.debug("Pingdom: Received response code #{response.code}")
             Chef::Log.debug("Pingdom: Retrieved the following response body: #{JSON.parse(response.body).inspect}")
             if response.code == '200'
-              Chef::Log.info("Pingdom: Successfully deleted check id #{check_id}")
+              Chef::Log.info("Pingdom: Successfully deleted check id #{id}")
               result = true
             end
           else
@@ -281,14 +336,9 @@ module Opscode
           end
           return result
         rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError, Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError, JSON::ParserError => e
-          Chef::Log.error("Pingdom: Error deleting check id #{check_id}: #{e}")
+          Chef::Log.error("Pingdom: Error deleting check id #{id}: #{e}")
           raise
         end
-      end
-
-      def update_check(check_id)
-        Chef::Log.error("Pingdom: updating checks is not currently supported!")
-        raise
       end
 
     end

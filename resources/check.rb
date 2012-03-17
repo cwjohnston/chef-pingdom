@@ -19,7 +19,7 @@ def initialize(*args)
       @action = :add
 end
 
-actions :add, :delete
+actions :add, :update, :delete
 
 attribute :name, :kind_of => String, :name_attribute => true
 attribute :type, :kind_of => String, :required => true, :default => 'http', :regex => /^http$|^httpcustom$|^tcp$|^udp$|^ping$|^dns$|^smtp$|^pop3$|^imap$/
