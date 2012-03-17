@@ -84,14 +84,24 @@ module Opscode
         end
       end
 
-      def sanitize_check_params(type, params)
+      def sanitize_check_params(type, params, direction)
         if validate_check_params(type, params)
           # when we query Pingdom for check details they return a rather annoying multi-dimensional hash that needs flattening
           clean_params = params.inject({}) { |h, (k, v)| h[k] = Boolean(v); h }
         end
+        # when creating or updating a check, the contactids values should be a string of comma seperated values ('from-chef')
+        # but when querying the api for a check's details, they send us an array of contactids ('from-pingdom')
         if clean_params.has_key?('contactids')
-          # contactsid parameter needs to be posted as a comma seperated list of integers
-          clean_params['contactids'] = clean_params['contactids'].join(',')
+          case direction
+          when "from-pingdom"
+            if clean_params['contactids'].is_a?(String)
+              clean_params['contactids'] = clean_params['contactids'].split(',')
+            end
+          when "from-chef"
+            if clean_params['contactids'].is_a?(Array)
+              clean_params['contactids'] = clean_params['contactids'].join(',')
+            end
+          end
         end
         return clean_params
       end
@@ -169,12 +179,6 @@ module Opscode
           raise
         end
 
-        #if details['check'].has_key?('contactids')
-        #  unless details['check']['contactids'].is_a?(Array)
-        #    details['check']['contactids'] = details['check']['contactids'].to_a
-        #  end
-        #end
- 
         return details['check']
       end
 
@@ -209,27 +213,40 @@ module Opscode
         type_attributes = current_check['type'][type]
         current_check['type'] = type
         current_check.merge!(type_attributes)
-        current_clean_params = sanitize_check_params(type, current_check)
+        current_check_clean = sanitize_check_params(type, current_check, 'from-pingdom')
 
         new_check = Hash.new
         new_check.merge!({ "name" => name })
         new_check.merge!({ "hostname" => host })
         new_check.merge!({ "type" => type })
 
-        new_clean_params = sanitize_check_params(type, params)
+        new_params_clean = sanitize_check_params(type, params, 'from-chef')
 
-        new_clean_params.each do |k,v|
+        new_params_clean.each do |k,v|
           new_check.merge!({ k => v })
         end
+       
+        # as previously mentioned, when creating or updating a check, pingdom expects a string of comma seperated contactids
+        # but when details of an existing check are retrieved, they come in as an array of integers
+        # so for the purposes of comparing checks, we'll convert the list of desired contactids to an array
+        contacts = Array.new
+
+        new_check['contactids'].split(',').each do |contact|
+          contacts << contact.to_i
+        end
+
+        # and we better sort them so they will stand a chance of matching
+        new_check['contactids'] = contacts.sort
+        current_check_clean['contactids'] = current_check_clean['contactids'].sort
 
         Chef::Log.debug("Pingdom: Comparing existing check with provided check configuration")
         Chef::Log.debug("Pingdom: Existing check parameters: #{current_check.inspect}")
         Chef::Log.debug("Pingdom: Provided check parameters: #{new_check.inspect}")
 
-        difference = current_check.diff(new_check)
+        difference = current_check_clean.diff(new_check)
 
         Chef::Log.debug("Pingdom: Difference: #{difference.inspect}")
-        
+
         return difference
       end
 
@@ -240,7 +257,7 @@ module Opscode
           api.use_ssl = true
           api.verify_mode = OpenSSL::SSL::VERIFY_PEER
           form_data = { 'name' => name, 'host' => host, 'type' => type }
-          clean_params = sanitize_check_params(type, params)
+          clean_params = sanitize_check_params(type, params, 'from-chef')
           clean_params.each do |k,v|
             form_data.merge!({ k => v})
           end
@@ -279,7 +296,7 @@ module Opscode
           api.use_ssl = true
           api.verify_mode = OpenSSL::SSL::VERIFY_PEER
           form_data = { 'host' => host }
-          clean_params = sanitize_check_params(type, params)
+          clean_params = sanitize_check_params(type, params, 'from-chef')
           clean_params.each do |k,v|
             form_data.merge!({ k => v})
           end
