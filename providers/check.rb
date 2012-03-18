@@ -17,28 +17,34 @@
 include Opscode::Pingdom::Check
 
 action :add do
-  if check_exists?(new_resource.name, new_resource.type, new_resource.api_key, new_resource.username, new_resource.password)
-    Chef::Log.debug("Pingdom: #{new_resource.type} check #{new_resource.name} already exists, so I will not attempt to create it again.")
+  if check_exists?(@new_resource.name, @new_resource.type, @new_resource.api_key, @new_resource.username, @new_resource.password)
+    Chef::Log.debug("Pingdom: #{@new_resource.type} check #{@new_resource.name} already exists, so I will not attempt to create it again.")
   else
-    add_check(new_resource.name, new_resource.host, new_resource.type, new_resource.check_params, new_resource.api_key, new_resource.username, new_resource.password)
+    if add_check(@new_resource.name, @new_resource.host, @new_resource.type, @new_resource.check_params, @new_resource.api_key, @new_resource.username, @new_resource.password)
+      @new_resource.updated_by_last_action(true)
+    end
   end
 end
 
 action :update do
-  if check_exists?(new_resource.name, new_resource.type, new_resource.api_key, new_resource.username, new_resource.password) and check_modified?(new_resource.name, new_resource.host, new_resource.type, new_resource.check_params, new_resource.api_key, new_resource.username, new_resource.password)
-    Chef::Log.debug("Pingdom: #{new_resource.type} check #{new_resource.name} already exists, but its attributes have changed so I will attempt to update it.")
-    update_check(new_resource.name, new_resource.host, new_resource.type, new_resource.check_params, new_resource.api_key, new_resource.username, new_resource.password)
+  if check_exists?(@new_resource.name, @new_resource.type, @new_resource.api_key, @new_resource.username, @new_resource.password) and check_modified?(@new_resource.name, @new_resource.host, @new_resource.type, @new_resource.check_params, @new_resource.api_key, @new_resource.username, @new_resource.password)
+    Chef::Log.debug("Pingdom: #{@new_resource.type} check #{@new_resource.name} already exists, but its attributes have changed so I will attempt to update it.")
+    if update_check(@new_resource.name, @new_resource.host, @new_resource.type, @new_resource.check_params, @new_resource.api_key, @new_resource.username, @new_resource.password)
+      @new_resource.updated_by_last_action(true)
+    end
   else
-    Chef::Log.warn("Pingdom: #{new_resource.type} check #{new_resource.name} was not modified. No update needed.")
+    Chef::Log.warn("Pingdom: #{@new_resource.type} check #{@new_resource.name} was not modified. No update needed.")
   end
 end
 
 action :delete do
-  unless check_exists?(new_resource.name, new_resource.type, new_resource.api_key, new_resource.username, new_resource.password)
-    Chef::Log.debug("Pingdom: #{new_resource.type} check #{new_resource.name} does not exist, so I will not attempt to delete it.")
+  unless check_exists?(@new_resource.name, @new_resource.type, @new_resource.api_key, @new_resource.username, @new_resource.password)
+    Chef::Log.debug("Pingdom: #{@new_resource.type} check #{@new_resource.name} does not exist, so I will not attempt to delete it.")
   else
-    check_id = get_check_id(new_resource.name, new_resource.type, new_resource.api_key, new_resource.username, new_resource.password)
-    Chef::Log.debug("Pingdom: resolved check #{new_resource.name} of new_resource.type #{new_resource.type} to check id #{check_id}")
-    delete_check(check_id, new_resource.api_key, new_resource.username, new_resource.password)
+    check_id = get_check_id(@new_resource.name, @new_resource.type, @new_resource.api_key, @new_resource.username, @new_resource.password)
+    Chef::Log.debug("Pingdom: resolved check #{@new_resource.name} of @new_resource.type #{@new_resource.type} to check id #{check_id}")
+    if delete_check(check_id, @new_resource.api_key, @new_resource.username, @new_resource.password)
+      @new_resource.updated_by_last_action(true)
+    end
   end
 end
