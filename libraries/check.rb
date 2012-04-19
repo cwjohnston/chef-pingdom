@@ -22,11 +22,6 @@ require 'json'
 module Opscode
   module Pingdom
     module Check
-
-      API_HOST = 'api.pingdom.com'
-      API_PORT = 443
-      API_VER = '2.0'
-
       def validate_check_params(type,params)
         Chef::Log.debug("Pingdom: Attempting to validate parameters for check of type '#{type}'")
         valid_params = [ 'name', 'host', 'type', 'paused', 'resolution', 'contactids', 'sendtoemail',
@@ -91,15 +86,11 @@ module Opscode
 
       def get_checks()
         begin
-          api = Net::HTTP.new(API_HOST, API_PORT)
-          api.use_ssl = true
-          api.verify_mode = OpenSSL::SSL::VERIFY_PEER
           request = Net::HTTP::Get.new("/api/#{API_VER}/checks", { 'App-Key' => new_resource.api_key })
           request.basic_auth(new_resource.username, new_resource.password)
           Chef::Log.debug("Pingdom: API connection configured as #{api.inspect}")
           Chef::Log.debug("Pingdom: API request configured as #{request.to_hash.inspect}")
           Chef::Log.debug("Pingdom: Sending API request...")
-          api.start
           response = api.request(request)
           unless response.body.nil?
             Chef::Log.debug("Pingdom: Received response code #{response.code}")
@@ -163,9 +154,6 @@ module Opscode
       def add_check(name, host, type, params)
         begin
           Chef::Log.debug("Pingdom: Attempting to add check '#{name}' of type '#{type}' for host '#{host}' with parameters #{params.inspect}")
-          api = Net::HTTP.new(API_HOST, API_PORT)
-          api.use_ssl = true
-          api.verify_mode = OpenSSL::SSL::VERIFY_PEER
           form_data = { 'name' => name, 'host' => host, 'type' => type }
           validate_check_params(type, params)
           params.each do |k,v|
@@ -178,7 +166,6 @@ module Opscode
           Chef::Log.debug("Pingdom: API request configured as #{request.to_hash.inspect}")
           Chef::Log.debug("Pingdom: Constructed the following post data:\n#{form_data.inspect}")
           Chef::Log.debug("Pingdom: Sending API request...")
-          api.start
           response = api.request(request)
           unless response.body.nil?
             Chef::Log.debug("Pingdom: Received response code #{response.code}")
@@ -201,15 +188,11 @@ module Opscode
       def delete_check(check_id)
         begin
           result = false
-          api = Net::HTTP.new(API_HOST, API_PORT)
-          api.use_ssl = true
-          api.verify_mode = OpenSSL::SSL::VERIFY_NONE
           request = Net::HTTP::Delete.new("/api/#{API_VER}/checks/#{check_id}", { 'App-Key' => new_resource.api_key })
           request.basic_auth(new_resource.username, new_resource.password)
           Chef::Log.debug("Pingdom: API connection configured as #{api.inspect}")
           Chef::Log.debug("Pingdom: API request configured as #{request.to_hash.inspect}")
           Chef::Log.debug("Pingdom: Sending API request...")
-          api.start
           response = api.request(request)
           unless response.body.nil?
             Chef::Log.debug("Pingdom: Received response code #{response.code}")
