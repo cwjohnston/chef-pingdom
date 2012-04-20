@@ -93,7 +93,7 @@ module Opscode
         begin
           api = Net::HTTP.new(API_HOST, API_PORT)
           api.use_ssl = true
-          api.verify_mode = OpenSSL::SSL::VERIFY_PEER
+          api.verify_mode = OpenSSL::SSL::VERIFY_NONE
           request = Net::HTTP::Get.new("/api/#{API_VER}/checks", { 'App-Key' => new_resource.api_key })
           request.basic_auth(new_resource.username, new_resource.password)
           Chef::Log.debug("Pingdom: API connection configured as #{api.inspect}")
@@ -165,7 +165,7 @@ module Opscode
           Chef::Log.debug("Pingdom: Attempting to add check '#{name}' of type '#{type}' for host '#{host}' with parameters #{params.inspect}")
           api = Net::HTTP.new(API_HOST, API_PORT)
           api.use_ssl = true
-          api.verify_mode = OpenSSL::SSL::VERIFY_PEER
+          api.verify_mode = OpenSSL::SSL::VERIFY_NONE
           form_data = { 'name' => name, 'host' => host, 'type' => type }
           validate_check_params(type, params)
           params.each do |k,v|
