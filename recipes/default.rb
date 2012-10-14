@@ -14,9 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-j = gem_package "json" do
-  version "<= 1.6.1"
+g = chef_gem "pingdom-client" do
   action :nothing
 end
 
-j.run_action(:install)
+g.run_action(:install)

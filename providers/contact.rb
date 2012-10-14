@@ -14,22 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include Opscode::Pingdom::Check
+
+include Opscode::Pingdom::Contact
 
 action :add do
-  unless check_exists?(new_resource.name, new_resource.type)
-    add_check(new_resource.name, new_resource.host, new_resource.type, new_resource.check_params)
+  unless contact_exists?(new_resource)
+    add_contact(new_resource)
   end
 end
 
 action :update do
-  if check_exists?(new_resource.name, new_resource.type)
-    update_check(new_resource.name, new_resource.host, new_resource.type, new_resource.check_params)
+  if contact_exists?(new_resource)
+    update_contact(new_resource)
   end
 end
 
 action :delete do
-  if check_exists?(new_resource.name, new_resource.type)
-    delete_check(check_id)
+  if contact_exists?(new_resource)
+    delete_contact(new_resource)
   end
 end
