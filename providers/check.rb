@@ -19,10 +19,12 @@ include Opscode::Pingdom::Check
 action :add do
   unless check_exists?(new_resource.name, new_resource.type)
     add_check(new_resource.name, new_resource.host, new_resource.type, new_resource.check_params)
+    new_resource.updated_by_last_action(true)
   end
 end
 
 action :update do
+  # sorry, this isn't idempotent
   if check_exists?(new_resource.name, new_resource.type)
     update_check(new_resource.name, new_resource.host, new_resource.type, new_resource.check_params)
   end
@@ -31,5 +33,6 @@ end
 action :delete do
   if check_exists?(new_resource.name, new_resource.type)
     delete_check(check_id)
+    new_resource.updated_by_last_action(true)
   end
 end

@@ -20,17 +20,20 @@ include Opscode::Pingdom::Contact
 action :add do
   unless contact_exists?(new_resource)
     add_contact(new_resource)
+    new_resource.updated_by_last_action(true)
   end
 end
 
 action :update do
   if contact_exists?(new_resource)
     update_contact(new_resource)
+    new_resource.updated_by_last_action(true)
   end
 end
 
 action :delete do
   if contact_exists?(new_resource)
     delete_contact(new_resource)
+    new_resource.updated_by_last_action(true)
   end
 end
