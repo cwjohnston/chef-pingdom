@@ -1,8 +1,7 @@
-Module Opscode
-  Module Pingdom
+module Opscode
+  module Pingdom
 
     begin
-      
       require 'pingdom-client'
 
       class Pingdom::Client
@@ -25,8 +24,8 @@ Module Opscode
         end
       end
 
-    rescue
-      Chef::Log.warn("Missing gem 'pingdom-client'")
+    rescue LoadError => e
+      Chef::Log.warn("Couldn't load gem 'pingdom-client': #{e.inspect}")
     end
 
     def pingdom
@@ -35,3 +34,4 @@ Module Opscode
 
   end
 end
+

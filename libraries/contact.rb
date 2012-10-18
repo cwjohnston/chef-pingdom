@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include Opscode::Pingdom
-
 module Opscode
   module Pingdom
     module Contact
@@ -29,8 +27,8 @@ module Opscode
             defaultsmsprovider
             directtwitter
             twitteruser}.each do |param|
-          unless contact.#{param}
-            params.merge({#{param} => contact.#{param}})
+          unless contact.send(param)
+            params.merge!({param.to_sym => contact.send(param)})
           end
         end
         pingdom.post("contacts",params)
@@ -50,8 +48,8 @@ module Opscode
             defaultsmsprovider
             directtwitter
             twitteruser}.each do |param|
-          unless contact.#{param}
-            params.merge({#{param} => contact.#{param}})
+          unless contact.send(param)
+            params.merge!({param.to_sym => contact.send(param)})
           end
         end
         pingdom.put("contact/#{contact.id}",params)
