@@ -67,3 +67,14 @@ action :delete do
     new_resource.updated_by_last_action(true)
   end
 end
+
+def load_current_resource
+  @current_resource = Chef::Resource::PingdomCheck.new(@new_resource.name)
+  if check_exists?(@new_resource.name,@new_resource.type)
+    @current_resource.type(@new_resource.type)
+    @current_resource.host(@new_resource.host)
+    @current_resource.id(check_id(@new_resource.name,@new_resource.type))
+    @current_resource.check_params(check_details(@new_resource.name,@new_resource.type))
+  end
+  @current_resource
+end
