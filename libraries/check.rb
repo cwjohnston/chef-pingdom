@@ -18,26 +18,113 @@ module Opscode
   module Pingdom
     module Check
 
-      def add_check(name,hostname,type,params)
-        merged_params = { :name => name, :hostname => hostname, :type => type }
-        merged_params.merge!(params)
-        pingdom.post("checks",merged_params)
+      def api
+        Gem.clear_paths
+        require 'pingdom-client'
+        # sorry for sending useful debug information to /dev/null, but this sure gets noisy otherwise.
+        @@api ||= ::Pingdom::Client.new(:username => new_resource.username, :password => new_resource.password, :key => new_resource.api_key, :logger => Logger.new('/dev/null'))
       end
 
-      def delete_check(name,hostname,type)
-        check = pingdom.checks.find {|c| c.name == name and c.hostname == hostname and c.type == type }
-        pingdom.delete("checks/#{check.id}")
+      def create_check(name,host,type,params)
+        merged_params = { :name => name, :host => host, :type => type }
+        merged_params.merge!(params)
+        response = api.post("checks",merged_params)
+        if response.status == "200"
+          Chef::Log.info("#{new_resource}: check created")
+        else
+          Chef::Log.fatal("#{new_resource}: unexpected response from api: " + response.body.inspect)
+        end
+      end
+
+      def pause_check(name,type)
+        params = { :paused => true }
+        check = api.checks.find {|c| c.name == name and c.type == type }
+        response = api.put("checks/#{check.id}",params)
+        if response.status == "200"
+          Chef::Log.info("#{new_resource}: check paused")
+        else
+          Chef::Log.fatal("#{new_resource}: unexpected response from api: " + response.body.inspect)
+        end
+      end
+
+      def resume_check(name,type)
+        params = { :paused => false }
+        check = api.checks.find {|c| c.name == name and c.type == type }
+        response = api.put("checks/#{check.id}",params)
+         if response.status == "200"
+          Chef::Log.info("#{new_resource}: check resumed")
+        else
+          Chef::Log.fatal("#{new_resource}: unexpected response from api: " + response.body.inspect)
+        end
+      end
+
+      def delete_check(name,type)
+        check = api.checks.find {|c| c.name == name and c.type == type }
+        response = api.delete("checks/#{check.id}")
+        if response.status == "200"
+          Chef::Log.info("#{new_resource}: check deleted")
+        else
+          Chef::Log.fatal("#{new_resource}: unexpected response from api: " + response.body.inspect)
+        end
       end 
 
-      def update_check(name,hostname,type,params)
-        merged_params = { :name => name, :hostname => hostname, :type => type }
+      def update_check(name,type,host,params)
+        merged_params = { :name => name, :host => host }
         merged_params.merge!(params)
-        pingdom.put("checks/#{check.id}",merged_params)
+        merged_params.delete('hostname') if merged_params.keys.include?('hostname')
+        id = check_id(name,type)
+        response = api.put("checks/#{id}",merged_params)
+        if response.status == "200"
+          Chef::Log.info("#{new_resource}: check updated")
+        else
+          Chef::Log.fatal("#{new_resource}: unexpected response from api: " + response.body.inspect)
+        end
       end
 
-      def check_exists?(name,type,params)
-        check = pingdom.checks.find {|c| c.name == name and c.type == type }
-        check ? true : false
+      def check_exists?(name,type)
+        check = api.checks.find {|c| c.name == name and c.type == type }
+        check.nil? ? false : true
+      end
+
+      def check_status(name,type)
+        check = api.checks.find {|c| c.name == name and c.type == type }
+        check.status
+      end
+
+      def check_details(name,type)
+        check = api.checks.find {|c| c.name == name and c.type == type }
+        response = api.get("checks/#{check.id}")
+        params = response.body['check']
+        # when we query the existing check we get back a response containing
+        # some nested parameters under the type key. flatten out the response to make comparison easier.
+        params.merge!(params['type']["#{type}"])
+        params['type'] = type
+        params
+      end
+
+      def check_id(name,type)
+        if check_exists?(name,type)
+          check = api.checks.find {|c| c.name == name and c.type == type }
+          check.id
+        end
+      end
+
+      def checks_differ?(current_check,new_check)
+        modified = false
+        params = new_check.check_params
+        params.merge!({ 'hostname' => new_check.host  })
+        params.keys.each do |k|
+          Chef::Log.debug("#{new_resource}: new check param #{k} = " + params[k].to_s)
+          Chef::Log.debug("#{new_resource}: current check param #{k} = " + current_check.check_params[k].to_s)
+          unless current_check.check_params[k].to_s == params[k].to_s
+            Chef::Log.debug("#{new_resource}: value of parameter #{k} differs \(current: #{current_check.check_params[k].to_s}, new: #{new_check.check_params[k].to_s}\)")
+            modified = true
+            return modified # we only need one parameter to differ, so return right now
+          else
+            modified = false
+          end
+        end
+        return modified
       end
 
     end
