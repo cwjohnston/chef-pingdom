@@ -14,8 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-g = chef_gem "pingdom-client" do
+gem_file_path = ::File.join(Chef::Config[:file_cache_path],'pingdom-client-0.0.6.alpha.gem')
+gem_url = "http://needle-repo.s3.amazonaws.com/gems/pingdom-client-0.0.6.alpha.gem"
+
+rf = remote_file gem_file_path do
+  owner "root"
+  group "root"
+  mode "0644"
+  source gem_url
   action :nothing
 end
 
+g = chef_gem 'pingdom-client' do
+  source gem_file_path
+  action :nothing
+end
+
+rf.run_action(:create_if_missing)
 g.run_action(:install)
