@@ -38,10 +38,11 @@ action :pause do
     status = check_status(new_resource.name, new_resource.type)
     case status
     when "up","down","unconfirmed_down","unknown"
-      Chef::Log.debug("Status of Pingdom check #{new_resource.name} of type #{new_resource.type} is \"#{status}\", attempting to pause it.")
+      Chef::Log.debug("#{new_resource}: status of check is \"#{status}\", attempting to pause it.")
       pause_check(new_resource.name, new_resource.type)
+      new_resource.updated_by_last_action(true)
     when "paused"
-      Chef::Log.debug("Pingdom check #{new_resource.name} of type #{new_resource.type} is already paused, skipping." )
+      Chef::Log.debug("#{new_resource}: status of check is paused, no action necessary." )
     end
   end
 end
@@ -51,10 +52,10 @@ action :resume do
     status = check_status(new_resource.name, new_resource.type)
     case status
     when "paused","unknown"
-      Chef::Log.debug("Status of Pingdom check #{new_resource.name} of type #{new_resource.type} is \"#{status}\", attempting to resume it.")
+      Chef::Log.debug("#{new_resource}: status of check is \"#{status}\", attempting to resume it.")
       resume_check(new_resource.name, new_resource.type)
     when "up","down","unconfirmed_down"
-      Chef::Log.debug("Status of Pingdom check #{new_resource.name} of type #{new_resource.type} is \"#{status}\", skipping." )
+      Chef::Log.debug("#{new_resource}: status of check is \"#{status}\", no action necessary." )
     end
   end
 end
