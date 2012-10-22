@@ -54,6 +54,7 @@ action :resume do
     when "paused","unknown"
       Chef::Log.debug("#{new_resource}: status of check is \"#{status}\", attempting to resume it.")
       resume_check(new_resource.name, new_resource.type)
+      new_resource.updated_by_last_action(true)
     when "up","down","unconfirmed_down"
       Chef::Log.debug("#{new_resource}: status of check is \"#{status}\", no action necessary." )
     end
@@ -62,7 +63,7 @@ end
 
 action :delete do
   if check_exists?(new_resource.name, new_resource.type)
-    delete_check(check_id)
+    delete_check(new_resource.name, new_resource.type)
     new_resource.updated_by_last_action(true)
   end
 end
