@@ -16,17 +16,20 @@
 
 include Opscode::Pingdom::Check
 
-action :add do
+action :create do
   unless check_exists?(new_resource.name, new_resource.type)
-    add_check(new_resource.name, new_resource.host, new_resource.type, new_resource.check_params)
+    create_check(new_resource.name, new_resource.host, new_resource.type, new_resource.check_params)
     new_resource.updated_by_last_action(true)
-  end
-end
-
-action :update do
-  # sorry, this isn't idempotent
-  if check_exists?(new_resource.name, new_resource.type)
-    update_check(new_resource.name, new_resource.host, new_resource.type, new_resource.check_params)
+  else
+    Chef::Log.debug("#{new_resource}: check of type #{new_resource.type} already exists for host #{new_resource.host} already exists")
+    current_resource = load_current_resource
+    if checks_differ?(current_resource, new_resource)
+      Chef::Log.debug("#{new_resource}: parameters differ, attempting to update")
+      update_check(new_resource.name, new_resource.type, new_resource.host, new_resource.check_params)
+      new_resource.updated_by_last_action(true)
+    else
+      Chef::Log.debug("#{new_resource}: parameters are unchanged, no update required")
+    end
   end
 end
 

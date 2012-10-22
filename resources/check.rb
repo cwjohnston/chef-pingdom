@@ -16,10 +16,10 @@
 
 def initialize(*args)
     super
-      @action = :add
+      @action = :create
 end
 
-actions :add, :pause, :resume, :update, :delete
+actions :create, :pause, :resume, :delete
 
 attribute :name, :kind_of => String, :name_attribute => true
 attribute :type, :kind_of => String, :required => true, :default => 'http', :regex => /^http$|^httpcustom$|^tcp$|^udp$|^ping$|^dns$|^smtp$|^pop3$|^imap$/
