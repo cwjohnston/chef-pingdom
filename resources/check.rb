@@ -27,4 +27,5 @@ attribute :host, :kind_of => String, :required => true
 attribute :api_key, :kind_of => String, :required => true
 attribute :username, :kind_of => String, :required => true
 attribute :password, :kind_of => String, :required => true
-attribute :check_params, :kind_of => [ NilClass, Hash ]
+attribute :check_params, :kind_of => Hash, :default => {}
+attribute :id, :kind_of => [NilClass,Fixnum], :default => nil
