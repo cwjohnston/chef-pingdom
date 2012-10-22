@@ -51,7 +51,7 @@ module Opscode
         params = { :paused => false }
         check = api.checks.find {|c| c.name == name and c.type == type }
         response = api.put("checks/#{check.id}",params)
-         if response.status == "200"
+        if response.status == "200"
           Chef::Log.info("#{new_resource}: check resumed")
         else
           Chef::Log.fatal("#{new_resource}: unexpected response from api: " + response.body.inspect)
