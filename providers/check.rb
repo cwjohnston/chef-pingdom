@@ -17,34 +17,64 @@
 include Opscode::Pingdom::Check
 
 action :add do
-
-  begin
-    new_resource_type = new_resource.type
-  rescue ::Chef::Exceptions::ValidationFailed
-    new_resource_type = "http"
-  end
-
-    Chef::Log.info("Pingdom: #{new_resource_type} check #{new_resource.name} already exists, so I will not attempt to create it again.")
-  if check_exists?(new_resource.name, new_resource_type)
-    Chef::Log.debug("Pingdom: #{new_resource_type} check #{new_resource.name} already exists, so I will not attempt to create it again.")
+  unless check_exists?(new_resource.name, new_resource.type)
+    add_check(new_resource.name, new_resource.host, new_resource.type, new_resource.check_params)
+    new_resource.updated_by_last_action(true)
   else
-    add_check(new_resource.name, new_resource.host, new_resource_type, new_resource.check_params)
+    Chef::Log.debug("#{new_resource}: check of type #{new_resource.type} already exists for host #{new_resource.host} already exists")
+    current_resource = load_current_resource
+    if checks_differ?(current_resource, new_resource)
+      Chef::Log.debug("#{new_resource}: parameters differ, attempting to update")
+      update_check(new_resource.name, new_resource.type, new_resource.host, new_resource.check_params)
+      new_resource.updated_by_last_action(true)
+    else
+      Chef::Log.debug("#{new_resource}: parameters are unchanged, no update required")
+    end
+  end
+end
+
+action :pause do
+  if check_exists?(new_resource.name, new_resource.type)
+    status = check_status(new_resource.name, new_resource.type)
+    case status
+    when "up","down","unconfirmed_down","unknown"
+      Chef::Log.debug("#{new_resource}: status of check is \"#{status}\", attempting to pause it.")
+      pause_check(new_resource.name, new_resource.type)
+      new_resource.updated_by_last_action(true)
+    when "paused"
+      Chef::Log.debug("#{new_resource}: status of check is paused, no action necessary." )
+    end
+  end
+end
+
+action :resume do
+  if check_exists?(new_resource.name, new_resource.type)
+    status = check_status(new_resource.name, new_resource.type)
+    case status
+    when "paused","unknown"
+      Chef::Log.debug("#{new_resource}: status of check is \"#{status}\", attempting to resume it.")
+      resume_check(new_resource.name, new_resource.type)
+      new_resource.updated_by_last_action(true)
+    when "up","down","unconfirmed_down"
+      Chef::Log.debug("#{new_resource}: status of check is \"#{status}\", no action necessary." )
+    end
   end
 end
 
 action :delete do
-  begin
-    new_resource_type = new_resource.type
-  rescue ::Chef::Exceptions::ValidationFailed
-    new_resource_type = "http"
+  if check_exists?(new_resource.name, new_resource.type)
+    delete_check(new_resource.name, new_resource.type)
+    new_resource.updated_by_last_action(true)
   end
+end
 
-  unless check_exists?(new_resource.name, new_resource.type)
-    Chef::Log.debug("Pingdom: #{new_resource_type} check #{new_resource.name} does not exist, so I will not attempt to delete it.")
-  else
-    check_id = get_check_id(new_resource.name, new_resource_type)
-    Chef::Log.debug("Pingdom: resolved check #{new_resource.name} of new_resource.type #{new_resource_type} to check id #{check_id}")
-    unless delete_check(check_id)
-    end
+def load_current_resource
+  @current_resource = Chef::Resource::PingdomCheck.new(@new_resource.name)
+  if check_exists?(@new_resource.name,@new_resource.type)
+    @current_resource.type(@new_resource.type)
+    @current_resource.host(@new_resource.host)
+    @current_resource.id(check_id(@new_resource.name,@new_resource.type))
+    @current_resource.check_params(check_details(@new_resource.name,@new_resource.type))
   end
+  @current_resource
 end

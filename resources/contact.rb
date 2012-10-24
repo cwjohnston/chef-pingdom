@@ -16,16 +16,19 @@
 
 def initialize(*args)
     super
-      @action = :add
+      @action = [ :add, :update ]
 end
 
-actions :add, :pause, :resume, :delete
+actions :add, :update, :delete
 
 attribute :name, :kind_of => String, :name_attribute => true
-attribute :type, :kind_of => String, :required => true, :default => 'http', :regex => /^http$|^httpcustom$|^tcp$|^udp$|^ping$|^dns$|^smtp$|^pop3$|^imap$/
-attribute :host, :kind_of => String, :required => true
+attribute :email, :kind_of => String
+attribute :cellphone, :kind_of => String
+attribute :countrycode, :kind_of => String
+attribute :countryiso, :kind_of => String
+attribute :defaultsmsprovider, :kind_of => String, :regex => /^clickatell$|^bulksms$|^esendex$|^cellsynt$/
+attribute :directwitter, :kind_of => [TrueClass,FalseClass]
+attribute :twitteruser, :kind_of => String
 attribute :api_key, :kind_of => String, :required => true
 attribute :username, :kind_of => String, :required => true
 attribute :password, :kind_of => String, :required => true
-attribute :check_params, :kind_of => Hash, :default => {}
-attribute :id, :kind_of => [NilClass,Fixnum], :default => nil
