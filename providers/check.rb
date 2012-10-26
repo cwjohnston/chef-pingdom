@@ -14,19 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include Opscode::Pingdom::Check
-
 action :add do
   unless check_exists?(new_resource.name, new_resource.type)
-    add_check(new_resource.name, new_resource.host, new_resource.type, new_resource.check_params)
-    new_resource.updated_by_last_action(true)
+    response = add_check(new_resource.name, new_resource.host, new_resource.type, new_resource.check_params)
+    if response.code == 200
+      Chef::Log.info("#{new_resource}: check added")
+      new_resource.updated_by_last_action(true)
+    else
+      Chef::Log.fatal("#{new_resource}: failed to add check, unexpected response from api: " + response.parsed_response.inspect)
+      raise
+    end
   else
     Chef::Log.debug("#{new_resource}: check of type #{new_resource.type} already exists for host #{new_resource.host} already exists")
     current_resource = load_current_resource
     if checks_differ?(current_resource, new_resource)
       Chef::Log.debug("#{new_resource}: parameters differ, attempting to update")
-      update_check(new_resource.name, new_resource.type, new_resource.host, new_resource.check_params)
-      new_resource.updated_by_last_action(true)
+      response = update_check(new_resource.name, new_resource.type, new_resource.host, new_resource.check_params)
+      if response.code == 200
+        Chef::Log.info("#{new_resource}: check modified")
+        new_resource.updated_by_last_action(true)
+      else
+        Chef::Log.fatal("#{new_resource}: failed to modify check, unexpected response from api: " + response.parsed_response.inspect)
+        raise
+      end
     else
       Chef::Log.debug("#{new_resource}: parameters are unchanged, no update required")
     end
@@ -39,8 +49,14 @@ action :pause do
     case status
     when "up","down","unconfirmed_down","unknown"
       Chef::Log.debug("#{new_resource}: status of check is \"#{status}\", attempting to pause it.")
-      pause_check(new_resource.name, new_resource.type)
-      new_resource.updated_by_last_action(true)
+      response = pause_check(new_resource.name, new_resource.type)
+      if response.code == 200
+        Chef::Log.info("#{new_resource}: check paused")
+        new_resource.updated_by_last_action(true)
+      else
+        Chef::Log.fatal("#{new_resource}: failed to pause check, unexpected response from api: " + response.parsed_response.inspect)
+        raise
+      end
     when "paused"
       Chef::Log.debug("#{new_resource}: status of check is paused, no action necessary." )
     end
@@ -53,8 +69,14 @@ action :resume do
     case status
     when "paused","unknown"
       Chef::Log.debug("#{new_resource}: status of check is \"#{status}\", attempting to resume it.")
-      resume_check(new_resource.name, new_resource.type)
-      new_resource.updated_by_last_action(true)
+      response = resume_check(new_resource.name, new_resource.type)
+      if response.code == 200
+        Chef::Log::info("#{new_resource}: check resumed")
+        new_resource.updated_by_last_action(true)
+      else
+        Chef::Log.fatal("#{new_resource}: failed to resume check, unexpected response from api: " + response.parsed_response.inspect)
+        raise
+      end
     when "up","down","unconfirmed_down"
       Chef::Log.debug("#{new_resource}: status of check is \"#{status}\", no action necessary." )
     end
@@ -63,8 +85,14 @@ end
 
 action :delete do
   if check_exists?(new_resource.name, new_resource.type)
-    delete_check(new_resource.name, new_resource.type)
-    new_resource.updated_by_last_action(true)
+    response = delete_check(new_resource.name, new_resource.type)
+    if response.code == 200
+      Chef::Log.info("#{new_resource}: check deleted")
+      new_resource.updated_by_last_action(true)
+    else
+      Chef::Log.fatal("#{new_resource}: failed to delete check, unexpected response from api: " + response.parsed_response.inspect)
+      raise
+    end
   end
 end
 
