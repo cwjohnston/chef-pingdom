@@ -103,5 +103,6 @@ def load_current_resource
     @current_resource.id(check_id(@new_resource.name,@new_resource.type))
     @current_resource.check_params(check_details(@new_resource.name,@new_resource.type))
   end
+  Chef::Log.debug("#{new_resource}: loaded current resource: " + @current_resource.inspect)
   @current_resource
 end
