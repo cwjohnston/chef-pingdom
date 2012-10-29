@@ -119,10 +119,10 @@ def checks_differ?(current_check,new_check)
   end
 
   params.keys.each do |k|
-    Chef::Log.debug("new check param #{k} = " + params[k].to_s)
     Chef::Log.debug("current check param #{k} = " + current_check.check_params[k].to_s)
+    Chef::Log.debug("new check param #{k} = " + params[k].to_s)
     unless current_check.check_params[k].to_s == params[k].to_s
-      Chef::Log.debug("value of parameter #{k} differs \(current: #{current_check.check_params[k].to_s}, new: #{new_check.check_params[k].to_s}\)")
+      Chef::Log.debug("value of parameter #{k} differs \(current: #{current_check.check_params[k].to_s}, new: #{params[k].to_s}\)")
       modified = true
       return modified # we only need one parameter to differ, so return right now
     else
