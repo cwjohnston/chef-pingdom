@@ -14,6 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# this proc will ensure that check params have strings for keys
+# courtesy http://stackoverflow.com/a/8380073/1118434
+s2s =
+lambda do |h|
+  Hash === h ?
+    Hash[
+      h.map do |k, v|
+        [k.respond_to?(:to_s) ? k.to_s : k, s2s[v]]
+      end
+    ] : h
+end
 
 def api
   @@api ||= PingdomClient.new(new_resource.username,new_resource.password,new_resource.api_key)
@@ -43,8 +54,11 @@ def delete_check(name,type)
 end 
 
 def update_check(name,type,host,params)
-  merged_params = { :name => name, :host => host }
-  merged_params.merge!(params)
+
+  clean_params = s2s[params]
+
+  merged_params = { 'name' => name, 'host' => host }
+  merged_params.merge!(clean_params)
   merged_params.delete('hostname') if merged_params.keys.include?('hostname')
 
   if merged_params['contactids'].class == Array
@@ -93,18 +107,6 @@ end
 
 def checks_differ?(current_check,new_check)
   modified = false
-
-  # this proc will ensure that check params have strings for keys
-  # courtesy http://stackoverflow.com/a/8380073/1118434
-  s2s =
-  lambda do |h|
-    Hash === h ?
-      Hash[
-        h.map do |k, v|
-          [k.respond_to?(:to_s) ? k.to_s : k, s2s[v]]
-        end
-      ] : h
-  end
 
   params = s2s[new_check.check_params]
   params.merge!({ 'hostname' => new_check.host  })
