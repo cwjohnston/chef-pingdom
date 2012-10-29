@@ -71,6 +71,10 @@ def check_details(name,type)
     params.merge!(k => v)
   end
   params['type'] = params['type'].keys.first
+  if params['contactids']
+    cids = params['contactids'].join(',')
+    params['contactids'] = cids
+  end
   params
 end
 
@@ -98,6 +102,22 @@ def checks_differ?(current_check,new_check)
 
   params = s2s[new_check.check_params]
   params.merge!({ 'hostname' => new_check.host  })
+
+  requestheader_keys = params.keys.grep(/^requestheader\d*$/)
+
+  unless requestheader_keys.empty? or requestheader_keys.nil?
+    params.merge!({ 'requestheaders' => {} })
+    params.select {|k,v| k.match(/^requestheader\d*$/)}.each do |k,v|
+      params['requestheaders'].merge!(v.split(":")[0] => v.split(":")[1..-1].join(':'))
+      params.delete(k)
+    end
+  end
+
+  if params['contactids'].class == Array
+    cids = params['contactids'].join(',')
+    params['contactids'] = cids
+  end
+
   params.keys.each do |k|
     Chef::Log.debug("new check param #{k} = " + params[k].to_s)
     Chef::Log.debug("current check param #{k} = " + current_check.check_params[k].to_s)
