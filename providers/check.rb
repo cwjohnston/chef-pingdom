@@ -26,7 +26,6 @@ action :add do
     end
   else
     Chef::Log.debug("#{new_resource}: check of type #{new_resource.type} already exists for host #{new_resource.host} already exists")
-    current_resource = load_current_resource
     if checks_differ?(current_resource, new_resource)
       Chef::Log.debug("#{new_resource}: parameters differ, attempting to update")
       response = update_check(new_resource.name, new_resource.type, new_resource.host, new_resource.check_params)
