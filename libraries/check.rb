@@ -46,6 +46,12 @@ def update_check(name,type,host,params)
   merged_params = { :name => name, :host => host }
   merged_params.merge!(params)
   merged_params.delete('hostname') if merged_params.keys.include?('hostname')
+
+  if merged_params['contactids'].class == Array
+    cids = merged_params['contactids'].join(',')
+    merged_params['contactids'] = cids
+  end
+
   Chef::Log.debug("#{new_resource}: merged params = " + merged_params.inspect)
   id = check_id(name,type)
   response = api.put("/checks/#{id}", {:body => merged_params})
