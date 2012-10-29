@@ -83,7 +83,20 @@ end
 
 def checks_differ?(current_check,new_check)
   modified = false
-  params = new_check.check_params
+
+  # this proc will ensure that check params have strings for keys
+  # courtesy http://stackoverflow.com/a/8380073/1118434
+  s2s =
+  lambda do |h|
+    Hash === h ?
+      Hash[
+        h.map do |k, v|
+          [k.respond_to?(:to_s) ? k.to_s : k, s2s[v]]
+        end
+      ] : h
+  end
+
+  params = s2s[new_check.check_params]
   params.merge!({ 'hostname' => new_check.host  })
   params.keys.each do |k|
     Chef::Log.debug("new check param #{k} = " + params[k].to_s)
