@@ -25,8 +25,8 @@ def api
 end
 
 def add_check(name,host,type,params)
-  merged_params = { :name => name, :host => host, :type => type }
-  merged_params.merge!(params)
+  merged_params = { 'name' => name, 'host' => host, 'type' => type }
+  merged_params.merge!(params.keys_to_s)
 
   if merged_params['contactids'].class == Array
     cids = merged_params['contactids'].join(',')
