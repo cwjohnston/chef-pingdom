@@ -33,6 +33,8 @@ def add_check(name,host,type,params)
     merged_params['contactids'] = cids
   end
 
+  Chef::Log.debug("#{new_resource}: merged params = " + merged_params.inspect)
+
   response = api.post("/checks", {:body => merged_params})
 end
 
