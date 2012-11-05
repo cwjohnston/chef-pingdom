@@ -22,7 +22,7 @@ action :add do
       new_resource.updated_by_last_action(true)
     else
       Chef::Log.fatal("#{new_resource}: failed to add check, unexpected response from api: " + response.parsed_response.inspect)
-      raise
+      raise unless new_resource.ignore_failure
     end
   else
     Chef::Log.debug("#{new_resource}: check of type #{new_resource.type} already exists for host #{new_resource.host} already exists")
@@ -34,7 +34,7 @@ action :add do
         new_resource.updated_by_last_action(true)
       else
         Chef::Log.fatal("#{new_resource}: failed to modify check, unexpected response from api: " + response.parsed_response.inspect)
-        raise
+        raise unless new_resource.ignore_failure
       end
     else
       Chef::Log.debug("#{new_resource}: parameters are unchanged, no update required")
@@ -54,7 +54,7 @@ action :pause do
         new_resource.updated_by_last_action(true)
       else
         Chef::Log.fatal("#{new_resource}: failed to pause check, unexpected response from api: " + response.parsed_response.inspect)
-        raise
+        raise unless new_resource.ignore_failure
       end
     when "paused"
       Chef::Log.debug("#{new_resource}: status of check is paused, no action necessary." )
@@ -74,7 +74,7 @@ action :resume do
         new_resource.updated_by_last_action(true)
       else
         Chef::Log.fatal("#{new_resource}: failed to resume check, unexpected response from api: " + response.parsed_response.inspect)
-        raise
+        raise unless new_resource.ignore_failure
       end
     when "up","down","unconfirmed_down"
       Chef::Log.debug("#{new_resource}: status of check is \"#{status}\", no action necessary." )
@@ -90,7 +90,7 @@ action :delete do
       new_resource.updated_by_last_action(true)
     else
       Chef::Log.fatal("#{new_resource}: failed to delete check, unexpected response from api: " + response.parsed_response.inspect)
-      raise
+      raise unless new_resource.ignore_failure
     end
   end
 end
