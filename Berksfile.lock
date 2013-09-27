@@ -1,1 +1,10 @@
-cookbook 'pingdom', :path => '.'
+{
+  "sources": {
+    "pingdom": {
+      "path": "."
+    },
+    "pingdom-test": {
+      "path": "./test/cookbooks/pingdom-test"
+    }
+  }
+}

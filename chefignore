@@ -48,3 +48,8 @@ Berksfile
 Berksfile.lock
 Vagrantfile
 .vagrant
+
+# test-kitchen
+.kitchen.yml
+.kitchen.local.yml
+.kitchen/*
