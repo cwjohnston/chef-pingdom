@@ -4,7 +4,7 @@ rescue LoadError
   Chef::Log.warn('httparty gem not available')
 end
 
-class PingdomClient 
+class PingdomClient
 
   class << self
     def load_httparty
