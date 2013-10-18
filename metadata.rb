@@ -1,3 +1,4 @@
+name             "pingdom"
 maintainer       "Cameon Johnston"
 maintainer_email "cameron@rootdown.net"
 license          "Apache 2.0"
