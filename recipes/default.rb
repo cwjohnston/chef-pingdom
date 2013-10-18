@@ -14,13 +14,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-chef_gem 'httparty' do
-  version '~> 0.11.0'
-end
-
-rb = ruby_block 'Enable httparty' do
-  block do
-    PingdomClient.load_httparty
-  end
-end
-rb.run_action(:create)
+chef_gem 'rest-client'

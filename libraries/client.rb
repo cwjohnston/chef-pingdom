@@ -1,55 +1,41 @@
-begin
-  require 'httparty'
-rescue LoadError
-  Chef::Log.warn('httparty gem not available')
-end
-
 class PingdomClient
 
-  class << self
-    def load_httparty
-      require 'httparty'
-      self.send(:include, HTTParty)
-      self.class_eval do
-        self.base_uri 'https://api.pingdom.com/api/2.0'
-      end
-    end
-  end
-
-  def initialize(u,p,k)
-    @auth = {:username => u, :password => p}
-    @headers = {'App-Key' => k}
+  def initialize(username, password, key)
+    require 'rest-client'
+    @key ||= key
+    @api ||= RestClient::Resource.new('https://api.pingdom.com/api/2.0', username, password)
   end
 
   def get(uri, options={})
-    options.merge!({:basic_auth => @auth})
-    options.merge!({:headers => @headers})
-    response = self.class.get(uri, options)
+    options.merge!({:app_key => @key})
+    response = @api[uri].get options
+    return response
   end
 
-  def put(uri, options={})
-    options.merge!({:basic_auth => @auth})
-    options.merge!({:headers => @headers})
-    response = self.class.put(uri, options)
+  def put(uri, body, options={})
+    options.merge!({:app_key => @key})
+    response = @api[uri].put body, options
+    return response
   end
 
-  def post(uri, options={})
-    options.merge!({:basic_auth => @auth})
-    options.merge!({:headers => @headers})
-    response = self.class.post(uri, options)
+  def post(uri, body, options={})
+    options.merge!({:app_key => @key})
+    Chef::Log.info("options: #{options.inspect}")
+    response = @api[uri].post body, options
+    return response
   end
 
   def delete(uri, options={})
-    options.merge!({:basic_auth => @auth})
-    options.merge!({:headers => @headers})
-    response = self.class.delete(uri, options)
+    options.merge!({:app_key => @key})
+    response = @api[uri].delete options
+    return response
   end
 
   def checks(options={})
-    options.merge!({:basic_auth => @auth})
-    options.merge!({:headers => @headers})
-    response = self.class.get('/checks', options).parsed_response
-    checks = response['checks']
+    require 'json'
+    response = self.get('/checks')
+    data = ::JSON.parse(response)
+    return data['checks']
   end
 
 end

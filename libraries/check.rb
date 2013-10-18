@@ -1,18 +1,20 @@
 # Author:: Cameron Johnston (<cameron@needle.com>)
-# 
+#
 # Copyright 2011, Needle, Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+require 'json'
 
 class Hash
   def keys_to_s
@@ -35,25 +37,25 @@ def add_check(name,host,type,params)
 
   Chef::Log.debug("#{new_resource}: merged params = " + merged_params.inspect)
 
-  response = api.post("/checks", {:body => merged_params})
+  response = api.post("/checks", merged_params)
 end
 
 def pause_check(name,type)
   params = { :paused => true }
   check = api.checks.find {|c| c['name'] == name and c['type'] == type }
-  response = api.put("/checks/#{check['id']}",{:body => params})
+  response = api.put("/checks/#{check['id']}", params)
 end
 
 def resume_check(name,type)
   params = { :paused => false }
   check = api.checks.find {|c| c['name'] == name and c['type'] == type }
-  response = api.put("/checks/#{check['id']}",{:body => params})
+  response = api.put("/checks/#{check['id']}", params)
 end
 
 def delete_check(name,type)
   check = api.checks.find {|c| c['name'] == name and c['type'] == type }
   response = api.delete("/checks/#{check['id']}")
-end 
+end
 
 def update_check(name,type,host,params)
 
@@ -70,7 +72,7 @@ def update_check(name,type,host,params)
 
   Chef::Log.debug("#{new_resource}: merged params = " + merged_params.inspect)
   id = check_id(name,type)
-  response = api.put("/checks/#{id}", {:body => merged_params})
+  response = api.put("/checks/#{id}", merged_params)
 end
 
 def check_exists?(name,type)
@@ -86,7 +88,8 @@ end
 def check_details(name,type)
   check = api.checks.find {|c| c['name'] == name and c['type'] == type }
   response = api.get("/checks/#{check['id']}")
-  params = response.parsed_response['check']
+  response_body = ::JSON.parse(response)
+  params = response_body['check']
   # when we query the existing check we get back a response containing
   # some nested parameters under the type key. flatten out the response to make comparison easier.
   params['type']["#{params['type'].keys.first}"].each do |k,v|
