@@ -1,6 +1,6 @@
 # Author:: Cameron Johnston (<cameron@needle.com>)
 #
-# Copyright 2011, Needle, Inc.
+# Copyright 2011-2013, Needle, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,8 +38,10 @@ pingdom_check 'pingdom_lwrp_test' do
   action :add
 end
 
-pingdom_check 'pingdom_lwrp_test' do
-  host 'www.google.com'
-  type 'http'
-  action :delete
+ruby_block "cleanup"  do
+  block do
+    # does nothing
+  end
+  only_if { node['pingdom_test']['cleanup'] }
+  notifies :delete, "pingdom_check[pingdom_lwrp_test]", :immediately
 end

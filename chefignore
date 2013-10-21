@@ -53,3 +53,4 @@ Vagrantfile
 .kitchen.yml
 .kitchen.local.yml
 .kitchen/*
+test_vars

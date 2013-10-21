@@ -1,6 +1,7 @@
+# encoding: utf-8
 # Author:: Cameron Johnston (<cameron@needle.com>)
 #
-# Copyright 2011, Needle, Inc.
+# Copyright 2011-2013, Needle, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,5 +14,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-chef_gem 'rest-client'

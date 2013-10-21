@@ -1,18 +1,37 @@
 # Author:: Cameron Johnston (<cameron@needle.com>)
-# 
-# Copyright 2011, Needle, Inc.
-# 
+#
+# Copyright 2011-2013, Needle, Inc.
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+require 'json'
+
+def load_gem
+  begin
+    require 'rest-client'
+  rescue LoadError
+    Chef::Log.info "rest-client gem not found. Attempting to install "
+    chef_gem 'rest-client' do
+      version node['pingdom']['api']['gem']['version']
+    end
+  end
+end
+
+def initialize(new_resource, run_context=nil)
+  super
+  load_gem
+  pingdom_api
+end
 
 action :add do
   unless check_exists?(new_resource.name, new_resource.type)
@@ -105,4 +124,142 @@ def load_current_resource
   end
   Chef::Log.debug("#{new_resource}: loaded current resource: " + @current_resource.inspect)
   @current_resource
+end
+
+private
+
+def pingdom_api
+  pingdom_api ||= Pingdom::Client.new(
+    new_resource.username,
+    new_resource.password,
+    new_resource.api_key
+  )
+end
+
+def find_check(name, type)
+  pingdom_api.checks.find { |c| c['name'] == name && c['type'] == type }
+end
+
+def add_check(name, host, type, params)
+  merged_params = { 'name' => name, 'host' => host, 'type' => type }
+  merged_params.merge!(params.keys_to_s)
+
+  if merged_params['contactids'].class == Array
+    cids = merged_params['contactids'].join(',')
+    merged_params['contactids'] = cids
+  end
+
+  Chef::Log.debug("#{new_resource}: merged params = " + merged_params.inspect)
+
+  pingdom_api.post('/checks', merged_params)
+end
+
+def pause_check(name, type)
+  params = { paused: true }
+  check = find_check(name, type)
+  pingdom_api.put("/checks/#{check['id']}", params)
+end
+
+def resume_check(name, type)
+  params = { paused: false }
+  check = find_check(name, type)
+  pingdom_api.put("/checks/#{check['id']}", params)
+end
+
+def delete_check(name, type)
+  check = find_check(name, type)
+  pingdom_api.delete("/checks/#{check['id']}")
+end
+
+def update_check(name, type, host, params)
+
+  clean_params = params.keys_to_s
+
+  merged_params = { 'name' => name, 'host' => host }
+  merged_params.merge!(clean_params)
+  merged_params.delete('hostname') if merged_params.keys.include?('hostname')
+
+  if merged_params['contactids'].class == Array
+    cids = merged_params['contactids'].join(',')
+    merged_params['contactids'] = cids
+  end
+
+  Chef::Log.debug("#{new_resource}: merged params = " + merged_params.inspect)
+  id = check_id(name, type)
+  pingdom_api.put("/checks/#{id}", merged_params)
+end
+
+def check_exists?(name, type)
+  check = find_check(name, type)
+  check.nil? ? false : true
+end
+
+def check_status(name, type)
+  check = find_check(name, type)
+  check['status']
+end
+
+def check_details(name, type)
+  check = find_check(name, type)
+  response = pingdom_api.get("/checks/#{check['id']}")
+  response_body = ::JSON.parse(response)
+  params = response_body['check']
+  # when we query the existing check we get back a response containing
+  # nested parameters under the type key.
+  # flatten out the response to make comparison easier.
+  params['type']["#{params['type'].keys.first}"].each do |k, v|
+    params.merge!(k => v)
+  end
+  params['type'] = params['type'].keys.first
+  if params['contactids']
+    cids = params['contactids'].join(',')
+    params['contactids'] = cids
+  end
+  params
+end
+
+def check_id(name, type)
+  if check_exists?(name, type)
+    check = find_check(name, type)
+    check['id']
+  end
+end
+
+def checks_differ?(current_check, new_check)
+  modified = false
+
+  params = new_check.check_params.keys_to_s
+  params.merge!({ 'hostname' => new_check.host  })
+
+  requestheader_keys = params.keys.grep(/^requestheader\d*$/)
+
+  unless requestheader_keys.empty? || requestheader_keys.nil?
+    params.merge!({ 'requestheaders' => {} })
+    params.select { |k, v| k.match(/^requestheader\d*$/) }.each do |k, v|
+      params['requestheaders'].merge!(
+        v.split(':')[0] => v.split(':')[1..-1].join(':')
+      )
+      params.delete(k)
+    end
+  end
+
+  if params['contactids'].class == Array
+    cids = params['contactids'].join(',')
+    params['contactids'] = cids
+  end
+
+  params.keys.each do |k|
+    Chef::Log.debug("comparing values for #{k}")
+    Chef::Log.debug("current: #{current_check.check_params[k].to_s}")
+    Chef::Log.debug("new: #{params[k].to_s}")
+    if current_check.check_params[k].to_s != params[k].to_s
+      Chef::Log.debug("value of parameter #{k} differs")
+      modified = true
+      # we only need one parameter to differ, so return now
+      return modified
+    else
+      modified = false
+    end
+  end
+  modified
 end
