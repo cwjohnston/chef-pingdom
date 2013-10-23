@@ -6,24 +6,19 @@ This cookbook provides libraries, resources and providers to configure and manag
 Requirements
 ============
 
-Requires Chef 0.7.10 or higher for Lightweight Resource and Provider support. Chef 0.10+ is recommended as this cookbook has not been tested with earlier versions.
+Chef 0.10+ is recommended as this cookbook has not been tested with earlier versions.
 
 A valid username, password and API key for your Pingdom account is required.
 
 Recipes
 =======
 
-This cookbook provides an empty default recipe which installs the required `json` gem (verison <=1.6.1). Chef already requires this gem, so it's really just included in the interests of completeness.
-
-Libraries
-=========
-
-This cookbook provides the `Opscode::Pingdom::Check` library module which is required by all the check providers.
+This cookbook provides a default recipe which installs the required `httparty` gem (verison ~> 0.11.0).
 
 Resources and Providers
 =======================
 
-This cookbook provides a single resource (`pingdom_check`) and corresponding provider for managing Pingdom service checks. 
+This cookbook provides a single resource (`pingdom_check`) and corresponding provider for managing Pingdom service checks.
 
 `pingdom_check` resources support the actions `add` and `delete`, `add` being the default. Each `pingdom_check` resource requires the following resource attributes:
 
@@ -97,7 +92,7 @@ Future
 License and Author
 ==================
 
-Author:: Cameron Johnston (<cameron@needle.com>)
+Author:: Cameron Johnston (<cameron@rootdown.net>)
 
 Copyright 2011, Needle, Inc.
 
@@ -112,17 +107,4 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
-Changes
-=======
-
-## v0.0.3
-* Added `api_key`, `username` and `password` as resource attributes instead of relying on node attributes.
-
-## v0.0.2
-* Rewire LWRP to use a single resource and provider instead of a resource and provider per service check type.
-* Add support for TCP, UDP, DNS, SMTP, POP3, IMAP and Ping service check types.
-
-## v0.0.1
-* Initial release.
 
