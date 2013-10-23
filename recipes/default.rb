@@ -15,7 +15,7 @@
 # limitations under the License.
 
 chef_gem 'httparty' do
-  version '~> 0.11.0'
+  version node['pingdom']['httparty_version']
 end
 
 rb = ruby_block 'Enable httparty' do
