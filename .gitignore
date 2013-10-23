@@ -1,3 +1,4 @@
 .vagrant
 .kitchen/
 .kitchen.local.yml
+test_vars
