@@ -104,6 +104,7 @@ GEM
       method_source (~> 0.8)
       slop (~> 3.4)
     rack (1.5.2)
+    rake (10.1.0)
     retryable (1.3.3)
     ridley (1.7.0)
       addressable
@@ -183,5 +184,6 @@ PLATFORMS
 DEPENDENCIES
   berkshelf
   kitchen-vagrant
+  rake
   stove
   test-kitchen (~> 1.0.0.beta)
