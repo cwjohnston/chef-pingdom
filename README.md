@@ -57,7 +57,7 @@ In order to utilize this cookbook, put the following at the top of the recipe wh
 The following resource would configure a HTTP service check for the host `foo.example.com`:
 
     pingdom_check 'foo http check' do
-      host 'foo.example.com'A
+      host 'foo.example.com'
       api_key node[:pingdom][:api_key]
       username node[:pingdom][:username]
       password node[:pingdom][:password]
