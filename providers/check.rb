@@ -128,6 +128,17 @@ end
 
 private
 
+def sanitize_params(params)
+  # we are sending form encoded data,
+  # so arrays should become comma delimited strings
+  params.map do |k,v|
+    if v.respond_to?(:join)
+      params[k] = v.join(',')
+    end
+  end
+  params
+end
+
 def pingdom_api
   pingdom_api ||= Pingdom::Client.new(
     new_resource.username,
@@ -144,10 +155,7 @@ def add_check(name, host, type, params)
   merged_params = { 'name' => name, 'host' => host, 'type' => type }
   merged_params.merge!(params.keys_to_s)
 
-  if merged_params['contactids'].class == Array
-    cids = merged_params['contactids'].join(',')
-    merged_params['contactids'] = cids
-  end
+  merged_params = sanitize_params(merged_params)
 
   Chef::Log.debug("#{new_resource}: merged params = " + merged_params.inspect)
 
@@ -179,10 +187,7 @@ def update_check(name, type, host, params)
   merged_params.merge!(clean_params)
   merged_params.delete('hostname') if merged_params.keys.include?('hostname')
 
-  if merged_params['contactids'].class == Array
-    cids = merged_params['contactids'].join(',')
-    merged_params['contactids'] = cids
-  end
+  merged_params = sanitize_params(merged_params)
 
   Chef::Log.debug("#{new_resource}: merged params = " + merged_params.inspect)
   id = check_id(name, type)
@@ -211,10 +216,7 @@ def check_details(name, type)
     params.merge!(k => v)
   end
   params['type'] = params['type'].keys.first
-  if params['contactids']
-    cids = params['contactids'].join(',')
-    params['contactids'] = cids
-  end
+  params = sanitize_params(params)
   params
 end
 
@@ -243,10 +245,7 @@ def checks_differ?(current_check, new_check)
     end
   end
 
-  if params['contactids'].class == Array
-    cids = params['contactids'].join(',')
-    params['contactids'] = cids
-  end
+  params = sanitize_params(params)
 
   params.keys.each do |k|
     Chef::Log.debug("comparing values for #{k}")
