@@ -79,6 +79,7 @@ Caveats
 
 * Changes in `check_params` do not modify the configuration of existing service checks.
 * One must look up contact IDs manually if setting `contactids` in `check_params`
+* Checks do not have an Alert Policy assigned by default.  To use the "Simple Up/Down Alerts", set `:use_legacy_notifications => true` in `check_params`.
 
 Future
 ======
