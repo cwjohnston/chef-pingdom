@@ -30,28 +30,29 @@ module Pingdom
     end
 
     def get(uri, options = {})
-      options.merge!({ app_key: @key })
-      @api[uri].get options, headers
+      add_creds!(options)
+      @api[uri].get options
     end
 
     def put(uri, body, options = {})
-      options.merge!({ app_key: @key })
-      @api[uri].put body, options, headers
+      add_creds!(options)
+      @api[uri].put body, options
     end
 
     def post(uri, body, options = {})
-      options.merge!({ app_key: @key })
-      @api[uri].post body, options, headers
+      add_creds!(options)
+      @api[uri].post body, options
     end
 
     def delete(uri, options = {})
-      options.merge!({ app_key: @key })
-      @api[uri].delete options, headers
+      add_creds!(options)
+      @api[uri].delete options
     end
 
     def checks(options = {})
       require 'json'
-      response = get('/checks', headers)
+      add_creds!(options)
+      response = get('/checks', options)
       if response.code == 200
         Chef::Log.info("got checks")
         data = ::JSON.parse(response)
@@ -64,8 +65,9 @@ module Pingdom
 
     private
 
-    def headers
-      { 'Account-Email' => @account_email } if @account_email
+    def add_creds!(options)
+      options.merge!({ app_key: @key })
+      options.merge!({ account_email: @account_email }) if @account_email
     end
   end
 end
