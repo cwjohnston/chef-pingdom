@@ -18,7 +18,7 @@
 module Pingdom
   class Client
 
-    def initialize(username, password, key)
+    def initialize(username, password, key, account_email)
       require 'rest-client'
       @key ||= key
       @api ||= RestClient::Resource.new(
@@ -26,34 +26,46 @@ module Pingdom
         username,
         password
       )
+      @account_email = account_email
     end
 
     def get(uri, options = {})
       options.merge!({ app_key: @key })
-      @api[uri].get options
+      @api[uri].get options, headers
     end
 
     def put(uri, body, options = {})
       options.merge!({ app_key: @key })
-      @api[uri].put body, options
+      @api[uri].put body, options, headers
     end
 
     def post(uri, body, options = {})
       options.merge!({ app_key: @key })
-      @api[uri].post body, options
+      @api[uri].post body, options, headers
     end
 
     def delete(uri, options = {})
       options.merge!({ app_key: @key })
-      @api[uri].delete options
+      @api[uri].delete options, headers
     end
 
     def checks(options = {})
       require 'json'
-      response = get('/checks')
-      data = ::JSON.parse(response)
-      data['checks']
+      response = get('/checks', headers)
+      if response.code == 200
+        Chef::Log.info("got checks")
+        data = ::JSON.parse(response)
+        data['checks']
+      else
+        Chef::Log.fatal("failed to get checks, unexpected response from api: " + response.parsed_response.inspect)
+        raise unless new_resource.ignore_failure
+      end
     end
 
+    private
+
+    def headers
+      { 'Account-Email' => @account_email } if @account_email
+    end
   end
 end
