@@ -22,7 +22,7 @@ module Pingdom
       require 'rest-client'
       @key ||= key
       @api ||= RestClient::Resource.new(
-        'https://api.pingdom.com/api/2.0',
+        'https://api.pingdom.com/api/2.1',
         username,
         password
       )
